@@ -12,18 +12,11 @@ class Classification(str, Enum):
     admin = "admin"
 
 def allowed_classifications(role: Role) -> Set[Classification]:
-    """
-    Returns the set of data labels a role is allowed to see.
-    """
     if role == Role.admin:
         return {Classification.public, Classification.internal, Classification.admin}
     return {Classification.public, Classification.internal}
 
 def _coerce_classification(raw: Any) -> Classification:
-    """
-    Robustly converts input to a Classification Enum.
-    Handles Pydantic Enum objects, raw strings, and None.
-    """
     # Accept already-coerced enum
     if isinstance(raw, Classification):
         return raw

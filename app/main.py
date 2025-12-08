@@ -85,7 +85,8 @@ def query_docs(payload: QueryRequest, principal: Principal = Depends(get_princip
     # 2. FILTER: Classification Filtering (Auth-Before-Retrieval)
     allowed_docs = []
     for d in docs:
-        m = d.model_dump(mode="json") # Changed after an Enums Failed Test         
+        m = d.model_dump(mode="json")
+      
         try:
             cls = Classification(m.get("classification"))
         except Exception:
