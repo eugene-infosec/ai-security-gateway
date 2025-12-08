@@ -8,10 +8,11 @@ from fastapi.responses import JSONResponse
 from app.logger import log_safe
 from app.middleware.request_id import RequestIdMiddleware
 from app.auth import get_principal, Principal, Role
-from app.policy import is_allowed, Classification
-# NEW IMPORTS
-from app.models import IngestRequest, StoredDoc, utcnow
+from app.policy import is_allowed, Classification, allowed_classifications
+from app.models import IngestRequest, StoredDoc, utcnow, QueryRequest, QueryResult
 from app.store import STORE
+from app.search import tokenize, score_doc
+from app.snippet import make_snippet
 
 app = FastAPI(title="AI Security Gateway")
 
@@ -25,7 +26,7 @@ def health(request: Request):
 def whoami(principal: Principal = Depends(get_principal)):
     return principal.model_dump()
 
-# --- NEW: HELPER ---
+# --- HELPER ---
 def _parse_classification(raw: str | None) -> Classification:
     if raw is None or str(raw).strip() == "":
         return Classification.internal
@@ -34,7 +35,7 @@ def _parse_classification(raw: str | None) -> Classification:
     except Exception:
         raise HTTPException(status_code=400, detail={"reason_code": "INVALID_CLASSIFICATION"})
 
-# --- NEW: INGEST ENDPOINT ---
+# --- INGEST ENDPOINT (Phase 4) ---
 @app.post("/ingest")
 def ingest(payload: IngestRequest, principal: Principal = Depends(get_principal)):
     # 1. Anti-spoofing Trap: tenant must NEVER come from request JSON
@@ -74,7 +75,58 @@ def ingest(payload: IngestRequest, principal: Principal = Depends(get_principal)
         "classification": doc.classification.value,
     }
 
-# ... (Keep existing logging middleware and exception handlers)
+# --- QUERY ENDPOINT (Phase 6) ---
+@app.post("/query")
+def query_docs(payload: QueryRequest, principal: Principal = Depends(get_principal)):
+    # 1. SCOPE: Tenant Isolation enforced by Store Access
+    docs = STORE.list_docs(principal.tenant_id)
+    allowed_cls = allowed_classifications(principal.role)
+
+    # 2. FILTER: Classification Filtering (Auth-Before-Retrieval)
+    allowed_docs = []
+    for d in docs:
+        m = d.model_dump(mode="json") # Changed after an Enums Failed Test         
+        try:
+            cls = Classification(m.get("classification"))
+        except Exception:
+            continue
+        
+        if cls in allowed_cls:
+            allowed_docs.append(m)
+
+    # 3. RANK: Lexical Scoring
+    q_tokens = tokenize(payload.query)
+    scored = []
+    for d in allowed_docs:
+        s = score_doc(d, q_tokens)
+        if s > 0:
+            scored.append((s, d))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top = scored[: payload.k]
+
+    # 4. RETURN: Generate Safe Snippets
+    results = []
+    for _s, d in top:
+        results.append(
+            QueryResult(
+                doc_id=d["doc_id"],
+                title=d["title"],
+                snippet=make_snippet(principal, d, payload.query),
+            ).model_dump()
+        )
+    
+    # 5. AUDIT
+    log_safe({
+        "event": "search_executed",
+        "tenant_id": principal.tenant_id,
+        "role": principal.role.value,
+        "match_count": len(results)
+    })
+
+    return {"results": results}
+
+# --- LOGGING & EXCEPTIONS ---
 @app.middleware("http")
 async def access_log(request: Request, call_next):
     start = time.perf_counter()

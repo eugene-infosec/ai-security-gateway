@@ -19,24 +19,33 @@ def allowed_classifications(role: Role) -> Set[Classification]:
         return {Classification.public, Classification.internal, Classification.admin}
     return {Classification.public, Classification.internal}
 
+def _coerce_classification(raw: Any) -> Classification:
+    """
+    Robustly converts input to a Classification Enum.
+    Handles Pydantic Enum objects, raw strings, and None.
+    """
+    # Accept already-coerced enum
+    if isinstance(raw, Classification):
+        return raw
+    # Accept other Enums by value (generic safety)
+    if isinstance(raw, Enum):
+        raw = raw.value
+    if raw is None:
+        raise ValueError("missing classification")
+    
+    return Classification(str(raw).strip().lower())
+
 def is_allowed(principal: Principal, doc: Mapping[str, Any]) -> Tuple[bool, str]:
     """
     The Core Invariant Check.
-    Determines if a Principal can access a specific Document.
-    
-    Returns:
-      (allowed, reason_code)
+    Returns: (allowed, reason_code)
     """
-    # 1. Tenant Isolation (The most critical check)
     doc_tenant = doc.get("tenant_id")
     if doc_tenant != principal.tenant_id:
         return False, "TENANT_MISMATCH"
 
-    # 2. Classification Check
-    raw_cls = doc.get("classification")
     try:
-        # robustly handle missing or string-based enums
-        cls = Classification(str(raw_cls))
+        cls = _coerce_classification(doc.get("classification"))
     except Exception:
         return False, "INVALID_CLASSIFICATION"
 

@@ -42,3 +42,16 @@ class StoredDoc(BaseModel):
     body: str = Field(min_length=1, max_length=10_000)
     classification: Classification
     created_at: datetime
+    
+    # ... (Keeping the existing code above and adding)
+
+class QueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    query: str = Field(min_length=1, max_length=500)
+    k: int = Field(default=5, ge=1, le=20)
+
+class QueryResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    doc_id: str
+    title: str
+    snippet: str

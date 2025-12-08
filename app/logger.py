@@ -25,6 +25,7 @@ SAFE_KEYS = {
     "doc_ids",
     "error", # Added for exception handling
     "classification", # Added after a Safe Logging Test
+    "match_count", #Added after a Blocked match_count inside query_docs
     }
 
 REDACT_KEYS = {"authorization", "cookie", "set-cookie", "body", "raw_query", "query", "headers"}
