@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import time
+from uuid import uuid4
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
 from app.logger import log_safe
 from app.middleware.request_id import RequestIdMiddleware
-# Updated imports
-from app.auth import get_principal, Principal
-from app.policy import is_allowed
+from app.auth import get_principal, Principal, Role
+from app.policy import is_allowed, Classification
+# NEW IMPORTS
+from app.models import IngestRequest, StoredDoc, utcnow
+from app.store import STORE
 
 app = FastAPI(title="AI Security Gateway")
 
@@ -20,11 +23,56 @@ def health(request: Request):
 
 @app.get("/whoami")
 def whoami(principal: Principal = Depends(get_principal)):
-    """
-    Proof Endpoint: Verifies that 'Authority Derivation' is working.
-    Returns the server-derived identity, not just what was claimed.
-    """
     return principal.model_dump()
+
+# --- NEW: HELPER ---
+def _parse_classification(raw: str | None) -> Classification:
+    if raw is None or str(raw).strip() == "":
+        return Classification.internal
+    try:
+        return Classification(str(raw).strip().lower())
+    except Exception:
+        raise HTTPException(status_code=400, detail={"reason_code": "INVALID_CLASSIFICATION"})
+
+# --- NEW: INGEST ENDPOINT ---
+@app.post("/ingest")
+def ingest(payload: IngestRequest, principal: Principal = Depends(get_principal)):
+    # 1. Anti-spoofing Trap: tenant must NEVER come from request JSON
+    if payload.tenant_id is not None:
+        raise HTTPException(status_code=400, detail={"reason_code": "TENANT_FIELD_FORBIDDEN"})
+
+    cls = _parse_classification(payload.classification)
+
+    # 2. Role-bounded classification authority
+    # Interns cannot label data as 'admin'
+    if cls == Classification.admin and principal.role != Role.admin:
+        raise HTTPException(status_code=403, detail={"reason_code": "CLASSIFICATION_FORBIDDEN"})
+
+    # 3. Create the Stored Document (Authority Derivation happens here)
+    doc = StoredDoc(
+        doc_id=str(uuid4()),
+        tenant_id=principal.tenant_id,  # <--- Derived from Principal, not payload
+        title=payload.title,
+        body=payload.body,
+        classification=cls,
+        created_at=utcnow(),
+    )
+    STORE.put_doc(doc)
+
+    # 4. Safe Audit Log
+    log_safe({
+        "event": "doc_ingested",
+        "tenant_id": principal.tenant_id,
+        "role": principal.role.value,
+        "doc_ids": [doc.doc_id],
+        "classification": doc.classification.value
+    })
+
+    return {
+        "doc_id": doc.doc_id,
+        "tenant_id": doc.tenant_id,
+        "classification": doc.classification.value,
+    }
 
 # ... (Keep existing logging middleware and exception handlers)
 @app.middleware("http")

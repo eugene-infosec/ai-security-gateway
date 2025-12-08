@@ -24,7 +24,8 @@ SAFE_KEYS = {
     "role",
     "doc_ids",
     "error", # Added for exception handling
-}
+    "classification", # Added after a Safe Logging Test
+    }
 
 REDACT_KEYS = {"authorization", "cookie", "set-cookie", "body", "raw_query", "query", "headers"}
 
