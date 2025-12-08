@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+*.pem
+secrets/
+
+# Terraform (CRITICAL)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+evidence/temp/
