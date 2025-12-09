@@ -22,15 +22,15 @@ run-local:
 
 # 3. TESTING & GATES (The Hiring Signals)
 test:
-	pytest tests/ -v
+	python3 -m pytest -v
 
 gate:
 	@echo "🔒 Running Security Gates..."
-	# We will uncomment these as we build them
-	# python3 evals/no_admin_leakage_gate.py
-	# python3 evals/tenant_isolation_gate.py
-	# python3 evals/safe_logging_gate.py
-	@echo "✅ Gates Passed (Placeholder)"
+	# We use PYTHONPATH=. so the scripts can import 'app' from the root
+	PYTHONPATH=. python3 evals/no_admin_leakage_gate.py
+	PYTHONPATH=. python3 evals/tenant_isolation_gate.py
+	PYTHONPATH=. python3 evals/safe_logging_gate.py
+	@echo "✨ ALL SECURITY GATES PASSED."
 
 # 4. INFRASTRUCTURE (Cost Safety)
 deploy-dev:

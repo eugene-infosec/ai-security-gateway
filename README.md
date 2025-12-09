@@ -14,8 +14,19 @@ If you are reviewing this for a role, these three artifacts prove the claims:
 
 1.  **Architecture & Invariants**: [Read the Security Thesis](docs/architecture.md)
 2.  **The Proof (CI Gates)**: Run `make gate` to see the "Misuse Regression Suite" block an attempt to leak Admin data to an Intern.
-3.  **The Attack Receipt**: See `evidence/attack_receipt.png` for an auditable 403 Deny log (Coming in Phase 7).
+3.  **The Attack Receipt**: See `evidence/attack_receipt.png` for an auditable 403 Deny log (generated via the instructions below).
 
+### 🧾 How to Generate a Deny Receipt
+Run the local API (`make run-local`) and trigger a policy violation:
+
+```bash
+# 1. Trigger a 403 (Intern trying to create Admin doc)
+curl -i -X POST [http://127.0.0.1:8000/ingest](http://127.0.0.1:8000/ingest) \
+  -H 'Content-Type: application/json' \
+  -H 'X-User: intern-1' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
+  -d '{"title":"HACK","body":"I want admin access","classification":"admin"}'
+
+# 2. Check the logs for "event": "access_denied"
 ---
 
 ## 🛡️ Security Invariants (The "Why")

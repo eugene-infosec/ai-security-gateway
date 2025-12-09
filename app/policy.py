@@ -1,9 +1,6 @@
 from __future__ import annotations
-
 from enum import Enum
 from typing import Any, Mapping, Tuple, Set
-
-# Import directly to avoid circular dependency issues
 from app.auth import Principal, Role
 
 class Classification(str, Enum):
@@ -17,22 +14,12 @@ def allowed_classifications(role: Role) -> Set[Classification]:
     return {Classification.public, Classification.internal}
 
 def _coerce_classification(raw: Any) -> Classification:
-    # Accept already-coerced enum
-    if isinstance(raw, Classification):
-        return raw
-    # Accept other Enums by value (generic safety)
-    if isinstance(raw, Enum):
-        raw = raw.value
-    if raw is None:
-        raise ValueError("missing classification")
-    
+    if isinstance(raw, Classification): return raw
+    if isinstance(raw, Enum): raw = raw.value
+    if raw is None: raise ValueError("missing classification")
     return Classification(str(raw).strip().lower())
 
 def is_allowed(principal: Principal, doc: Mapping[str, Any]) -> Tuple[bool, str]:
-    """
-    The Core Invariant Check.
-    Returns: (allowed, reason_code)
-    """
     doc_tenant = doc.get("tenant_id")
     if doc_tenant != principal.tenant_id:
         return False, "TENANT_MISMATCH"
