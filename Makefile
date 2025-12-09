@@ -1,20 +1,29 @@
-.PHONY: doctor run-local test gate ci deploy-dev destroy-dev
+# 1. Add 'install' and 'doctor-aws' to PHONY
+.PHONY: doctor doctor-aws install run-local test gate ci deploy-dev destroy-dev
 
-# 1. SETUP & CHECKS
+# --- SETUP & CHECKS ---
+
+# 'doctor' -> Local Dev only (Safe for reviewers without AWS)
 doctor:
-	@echo "Checking system dependencies..."
+	@echo "Checking local dependencies..."
 	@which python3 > /dev/null || (echo "❌ Python3 missing" && exit 1)
 	@which git > /dev/null || (echo "❌ Git missing" && exit 1)
+	@echo "✅ Local tools found."
+
+# 'doctor-aws' -> Infrastructure only (For you/deployment)
+doctor-aws:
+	@echo "Checking Cloud dependencies..."
 	@which terraform > /dev/null || (echo "❌ Terraform missing" && exit 1)
 	@which aws > /dev/null || (echo "❌ AWS CLI missing" && exit 1)
-	@echo "✅ Tools found."
+	@echo "✅ Cloud tools found."
 	@echo "Checking AWS Identity..."
 	@aws sts get-caller-identity --query "Arn" --output text || (echo "❌ AWS Auth failed" && exit 1)
 	@echo "✅ AWS Identity confirmed."
 
 # 2. LOCAL DEVELOPMENT
 install:
-	pip install -r requirements.txt
+	# Use python3 -m to ensure we use the venv's pip, not system pip
+	python3 -m pip install -r requirements.txt
 
 run-local:
 	@echo "Starting local API..."

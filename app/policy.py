@@ -8,9 +8,16 @@ class Classification(str, Enum):
     internal = "internal"
     admin = "admin"
 
+# app/policy.py
+
 def allowed_classifications(role: Role) -> Set[Classification]:
+    """
+    Returns the set of data labels a role is allowed to see.
+    """
     if role == Role.admin:
         return {Classification.public, Classification.internal, Classification.admin}
+    
+    # FIX: Interns can ONLY see public/internal (Admin removed)
     return {Classification.public, Classification.internal}
 
 def _coerce_classification(raw: Any) -> Classification:

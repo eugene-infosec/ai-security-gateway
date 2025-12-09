@@ -1,7 +1,14 @@
 import sys
+import logging
 from fastapi.testclient import TestClient
 from app.main import app
 from app.store import STORE
+
+# --- SILENCE NOISE ---
+# Only show WARNINGS or ERRORS. Hide INFO logs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("app").setLevel(logging.WARNING)
+# ---------------------
 
 client = TestClient(app)
 
