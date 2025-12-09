@@ -1,4 +1,4 @@
-.PHONY: doctor run-local test gate deploy-dev destroy-dev
+.PHONY: doctor run-local test gate ci deploy-dev destroy-dev
 
 # 1. SETUP & CHECKS
 doctor:
@@ -22,15 +22,18 @@ run-local:
 
 # 3. TESTING & GATES (The Hiring Signals)
 test:
-	python3 -m pytest -v
+	# Quiet mode for cleaner CI logs
+	python3 -m pytest -q
 
 gate:
 	@echo "🔒 Running Security Gates..."
-	# We use PYTHONPATH=. so the scripts can import 'app' from the root
 	PYTHONPATH=. python3 evals/no_admin_leakage_gate.py
 	PYTHONPATH=. python3 evals/tenant_isolation_gate.py
 	PYTHONPATH=. python3 evals/safe_logging_gate.py
 	@echo "✨ ALL SECURITY GATES PASSED."
+
+ci: test gate
+	@echo "✅ CI Pipeline Verified."
 
 # 4. INFRASTRUCTURE (Cost Safety)
 deploy-dev:
