@@ -1,22 +1,31 @@
 # Threat Model & Security Architecture
 
+This document focuses on the primary security goal of this project:
+**prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable deny receipts**.
+
 ## 1. Core Assets
-* **Tenant Data:** Proprietary documents stored in the system.
-* **Identity Context:** The `Principal` object (User, Tenant, Role).
-* **Audit Logs:** Immutable records of access and denial.
+- **Tenant Data:** Documents stored and retrieved by the system.
+- **Identity Context:** The derived `Principal` (user_id, tenant_id, role).
+- **Audit Events:** Structured, append-only security-relevant events (e.g., `access_denied`) with correlation via `request_id`.
 
 ## 2. Trust Boundaries
-* **The API Edge:** Any data entering `POST /ingest` or `POST /query` is untrusted until validated against the Principal.
-* **The Store Boundary:** The storage layer is passive; the application must enforce scoping before reading/writing.
+- **API Boundary:** All incoming requests are attacker-controlled until a `Principal` is derived and policy is applied.
+- **Invariant Boundary (Trusted Compute):** Principal derivation, policy evaluation, tenant scoping, snippet redaction, and audit logging.
+- **Store Boundary:** Storage is passive; the app must enforce authorization and scoping before reads/writes.
+
+> **Demo vs Production Identity:** Current deployments use **header-derived identity** for deterministic verification (`X-User`, `X-Tenant`, `X-Role`). A production deployment would derive identity from **JWT/authorizer claims** (no client-supplied roles).
 
 ## 3. Top Threats
+
 | Threat | Mitigation Strategy | Evidence |
 | :--- | :--- | :--- |
-| **Cross-Tenant Leakage** (BOLA) | **Authority Derivation:** Tenant ID is derived from the JWT/Header, never the payload. <br> **Structural Isolation:** Storage keys are tenant-prefixed. | `evals/tenant_isolation_gate.py` |
-| **Privilege Escalation** (IDOR) | **Role-Bounded Access:** Interns cannot set `classification=admin`. <br> **Auth-Before-Retrieval:** Search scope is filtered *before* scoring. | `evals/no_admin_leakage_gate.py` |
-| **Secret Leakage in Logs** | **Safe Logging Contract:** Allowlist schema filters out `body`, `query`, and `Authorization` headers. | `evals/safe_logging_gate.py` |
-| **Prompt Injection** | **Metadata Filtering:** Security logic relies on structured metadata, not semantic meaning. "Ignore instructions" commands are ignored by the auth filter. | `evals/misuse_suite.py` |
+| **Cross-Tenant Leakage (BOLA)** | **Authority Derivation:** tenant is derived server-side (never accepted from request JSON). **Structural Isolation:** DynamoDB partitioning uses tenant-prefixed keys (`PK = TENANT#{tenant_id}`). | `evals/tenant_isolation_gate.py` |
+| **Privilege Escalation / Admin Leakage (IDOR)** | **Role-Bounded Access:** interns cannot ingest `classification=admin`. **Auth-Before-Retrieval:** classification filtering is applied before ranking/snippet. | `evals/no_admin_leakage_gate.py`, `tests/test_ingest.py`, `tests/test_query.py` |
+| **Sensitive Data in Logs** | **Safe Logging Contract:** structured allowlist; rejects unsafe keys and avoids logging bodies/queries/secrets. | `evals/safe_logging_gate.py`, `evals/safe_logging_gate.py` |
+| **Prompt/Query Injection (Retrieval Manipulation)** | **Policy is metadata-based:** authorization depends on `Principal`, tenant scoping, and classification—not on the semantic content of prompts. **Snippet safety:** redaction prevents secrets from appearing even if stored. | `tests/test_query.py` (snippet redaction), CI gates (`make gate`) |
 
 ## 4. Residual Risks & Next Steps
-* **DDoS:** Currently mitigated only by Lambda concurrency limits. *Next Step:* WAF + API Gateway Throttling.
-* **Key Management:** Currently using env vars/headers. *Next Step:* AWS Secrets Manager + IRSA.
+- **DoS / Abuse:** Currently relies on API Gateway defaults + Lambda scaling. *Next:* API Gateway throttling, WAF, per-tenant rate limits.
+- **Production Identity:** Demo uses header-auth. *Next:* JWT verification and/or API Gateway/Lambda authorizer; map claims to `Principal`.
+- **Key Management / Secrets:** Minimal secrets today. *Next:* Secrets Manager / Parameter Store, KMS encryption policies where applicable.
+- **Observability:** Add dashboards/alarms for deny rates, 4xx/5xx, latency, and cost (CloudWatch metrics + alarms).
