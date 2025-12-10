@@ -2,10 +2,14 @@
 __pycache__/
 *.py[cod]
 *.so
-.venv
+.venv/
 venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
 
 # Environment Variables & Secrets (CRITICAL)
 .env
@@ -18,6 +22,18 @@ secrets/
 *.tfstate
 *.tfstate.backup
 *.tfplan
+.terraform.tfstate.lock.info
+*.tfstate.*
+
+# Terraform crash logs + local overrides (do not commit)
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # IDEs
 .vscode/
@@ -27,3 +43,8 @@ secrets/
 # Logs
 *.log
 evidence/temp/
+
+# Build artifacts (Lambda packaging)
+build/
+dist/
+lambda_function.zip
