@@ -26,7 +26,7 @@ graph LR
 * **Untrusted inputs:** request headers/body, queries, document text, any client-supplied claims.
 * **Trusted boundary:** principal derivation, policy evaluation, tenant scoping, snippet redaction, audit logging.
 
-> **Demo vs. Production:** The cloud demo uses a **header-based principal resolver** for easy verification. A production deployment would derive identity from **JWT/authorizer claims** at the edge (not client-supplied role headers).
+* **Identity Source:** In Local Dev, identity is mocked via headers (X-User) for speed. In AWS, identity is enforced by Cognito + API Gateway JWT Authorizer. The Lambda function only processes requests with valid, cryptographically signed claims.
 
 ## Security Invariants (Enforced by construction)
 

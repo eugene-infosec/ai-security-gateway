@@ -89,3 +89,24 @@ clean-tf:
 	rm -rf infra/terraform/.terraform
 	rm -f infra/terraform/terraform.tfstate infra/terraform/terraform.tfstate.backup infra/terraform/.terraform.tfstate.lock.info
 	rm -f terraform.tfstate terraform.tfstate.backup .terraform.tfstate.lock.info
+
+.PHONY: smoke-dev-jwt
+
+smoke-dev-jwt:
+	@echo "☁️ Running Smoke Test (JWT)..."
+	@if [ -z "$$JWT_TOKEN" ]; then echo "❌ Set JWT_TOKEN env var"; exit 1; fi
+	$(eval API_URL := $(shell cd infra/terraform && terraform output -raw base_url))
+	@echo "Target: $(API_URL)"
+
+	@echo "1) /whoami with JWT"
+	@curl -s "$(API_URL)/whoami" \
+		-H "Authorization: Bearer $$JWT_TOKEN" \
+		| grep "tenant_id" && echo "✅ /whoami passed" || (echo "❌ /whoami failed"; exit 1)
+
+	@echo "2) Trigger deny receipt (Expect 403)"
+	@curl -s -o /dev/null -w "%{http_code}\n" -X POST "$(API_URL)/ingest" \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer $$JWT_TOKEN" \
+		-d '{"title":"HACK","body":"x","classification":"admin"}' \
+		| grep 403 && echo "✅ 403 deny receipt triggered" || \
+		(echo "❌ expected 403"; exit 1)

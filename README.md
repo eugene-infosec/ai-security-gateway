@@ -99,6 +99,10 @@ make smoke-dev
 # 4) Teardown (cost safety)
 make destroy-dev
 ```
+### Cloud Demo (JWT Mode)
+1. **Authenticate:** I log into Cognito via CLI to get a valid OIDC token.
+2. **Verify Identity:** `make smoke-dev-jwt` hits `/whoami` and proves the system derives `Principal` from the token claims.
+3. **Verify Defense:** The script attempts an unauthorized action (Intern accessing Admin), triggering a 403 and a **Forensic Deny Receipt** in CloudWatch.
 
 > **Security note:** The cloud demo intentionally uses a **header-based identity resolver** for easy verification (e.g., `X-User`, `X-Tenant`, `X-Role`). A production deployment would derive identity from **JWT/authorizer claims** instead of client-supplied role headers.
 

@@ -1,3 +1,5 @@
+# infra/terraform/api_gateway.tf
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "ai-gateway-http"
   protocol_type = "HTTP"
@@ -16,17 +18,45 @@ resource "aws_apigatewayv2_integration" "lambda" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "any" {
+# --- PUBLIC ROUTES (No Auth) ---
+
+resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.http.id
-  route_key = "ANY /{proxy+}"
+  route_key = "GET /health"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
-resource "aws_apigatewayv2_route" "root" {
+# --- PROTECTED ROUTES (JWT Auth Required) ---
+
+resource "aws_apigatewayv2_route" "ingest" {
   api_id    = aws_apigatewayv2_api.http.id
-  route_key = "ANY /"
+  route_key = "POST /ingest"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
 }
+
+resource "aws_apigatewayv2_route" "query" {
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "POST /query"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "whoami" {
+  # FIX: removed "_api" suffix below
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "GET /whoami"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+# --- PERMISSIONS ---
 
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"

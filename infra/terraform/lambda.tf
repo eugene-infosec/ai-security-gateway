@@ -1,3 +1,5 @@
+# infra/terraform/lambda.tf
+
 # IAM ROLE
 resource "aws_iam_role" "exec" {
   name = "ai_gateway_role"
@@ -39,6 +41,8 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.docs.name
+      # --- NEW: Tell the app to use JWT verification in Cloud ---
+      AUTH_MODE  = "jwt"
     }
   }
   depends_on = [aws_cloudwatch_log_group.logs]
