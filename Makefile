@@ -77,3 +77,15 @@ smoke-dev:
 	  -H 'X-User: malicious_intern' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
 	  -d '{"title":"HACK","body":"x","classification":"admin"}' | grep 403 && echo "✅ 403 triggered"
 	@echo "Audit: Check CloudWatch logs for event=access_denied"
+
+.PHONY: clean clean-tf
+
+clean:
+	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
+	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+	rm -rf build dist lambda_function.zip
+
+clean-tf:
+	rm -rf infra/terraform/.terraform
+	rm -f infra/terraform/terraform.tfstate infra/terraform/terraform.tfstate.backup infra/terraform/.terraform.tfstate.lock.info
+	rm -f terraform.tfstate terraform.tfstate.backup .terraform.tfstate.lock.info

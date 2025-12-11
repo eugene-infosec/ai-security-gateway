@@ -6,11 +6,27 @@ from app.models import StoredDoc
 
 # Interface (Implicit)
 class InMemoryStore:
-    def __init__(self): self._docs = {}
-    def clear(self): self._docs.clear()
-    def put_doc(self, doc): self._docs.setdefault(doc.tenant_id, {})[doc.doc_id] = doc
-    def list_docs(self, tenant_id): return list(self._docs.get(tenant_id, {}).values())
-    def get_doc(self, tenant_id, doc_id): return self._docs.get(tenant_id, {}).get(doc_id)
+    def __init__(self):
+        # Structural Isolation: Key is tenant_id, Value is {doc_id: doc}
+        self.data: Dict[str, Dict[str, StoredDoc]] = {}
+
+    def put_doc(self, doc: StoredDoc) -> None:
+        if doc.tenant_id not in self.data:
+            self.data[doc.tenant_id] = {}
+        self.data[doc.tenant_id][doc.doc_id] = doc
+
+    def list_docs(self, tenant_id: str) -> List[StoredDoc]:
+        # Structural isolation: Only look in this tenant's dict
+        tenant_store = self.data.get(tenant_id, {})
+        return list(tenant_store.values())
+
+    def get_doc(self, tenant_id: str, doc_id: str):
+        # Missing helper that tests rely on
+        return self.data.get(tenant_id, {}).get(doc_id)
+
+    def clear(self) -> None:
+        # Used by tests to reset state
+        self.data.clear()
 
 class DynamoDBStore:
     def __init__(self, table_name: str):
