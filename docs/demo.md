@@ -1,4 +1,3 @@
-````markdown
 # ⚡ Interview Demo Script & Runbook — AI Security Gateway (Retrieval-Safety-as-Code)
 
 This single file is intentionally **multi-purpose**:
@@ -31,10 +30,13 @@ If a reviewer reads only a few items, point them here:
   - `evidence/attack_receipt_cloud.png` — cloud deny receipt (CloudWatch)
   - `evidence/ci_gate_fail.png` — intentionally introduced regression blocked by `make gate`
   - `evidence/smoke_dev_output.png` — successful AWS smoke test output
+  - `evidence/jwt_whoami.png` — Cognito/JWT-based `/whoami` principal proof
+  - `evidence/jwt_attack_receipt.png` — deny receipt in CloudWatch for a JWT-authenticated request
 
 The proof is executable:
-- `make test` — unit tests
-- `make gate` — security misuse regression suite (invariant gates)
+
+- `make test` — unit tests  
+- `make gate` — security misuse regression suite (invariant gates)  
 - `make ci` — one-command verification (same command used in GitHub Actions)
 
 ---
@@ -42,18 +44,23 @@ The proof is executable:
 ## Demo paths (choose one)
 
 ### ✅ 2–3 minutes (fast)
+
 1) Show `docs/architecture.md` (trust boundary + auth-before-retrieval)  
 2) Run `make ci`  
 3) Trigger a deny receipt (local or cloud) and point to `reason_code` + `request_id`
 
 ### ✅ 6–8 minutes (full)
+
 Fast demo +:
+
 - show tenant isolation (A cannot see B)
 - explain deny receipt fields and why they exist
 - state “demo identity vs production identity” honestly
 
 ### ✅ 10–12 minutes (deep)
+
 Full demo +:
+
 - explain gates as “misuse regression tests”
 - explain safe logging contract (why body/query/auth never appear in logs)
 - map threats → mitigations → evidence artifacts
@@ -65,53 +72,62 @@ Full demo +:
 Use this like a menu. Keep it natural; don’t memorize verbatim.
 
 ## 1) Hook (20–30s)
+
 **Say:**  
 “Most RAG systems fail security reviews because they fetch first and filter later. If anything in that chain slips, sensitive data enters the context window. I built a gateway that enforces **auth-before-retrieval**, and every denial produces a structured **deny receipt** you can audit.”
 
 **Show:** `docs/architecture.md`
 
-**Point out:**  
+**Point out:**
+
 - principal derivation happens **before** retrieval/snippet generation  
 - tenant authority is derived server-side (client cannot assert tenant)  
 - classification enforcement happens before search results can be returned
 
 ## 2) What makes it “senior” (20–30s)
+
 **Say:**  
 “I treat security like code: explicit invariants, misuse tests, and evidence. I’m not asking you to trust me — everything is executable, and regressions are blocked in CI.”
 
 **Show:** `make ci` and GitHub Actions using the same command.
 
 ## 3) Proof: misuse regression suite (30–45s)
+
 **Say:**  
 “These are adversarial tests that simulate real failure modes: admin leakage, cross-tenant leakage, and unsafe logging.”
 
 **Run:** `make ci` (or `make gate`)
 
-**Point out:**  
+**Point out:**
+
 - gates validate security **properties**, not just endpoint success  
 - the suite blocks regressions the moment they’re introduced
 
 ## 4) The attack + deny receipt (45–75s)
+
 **Say:**  
 “Security is invisible unless you can prove it. Here’s a policy violation and the deny receipt: who/what/when/why, plus a correlation ID.”
 
 **Run:** local or cloud deny receipt command (below)
 
-**Point out in output/logs:**  
+**Point out in output/logs:**
+
 - `event = "access_denied"`  
 - `reason_code = "CLASSIFICATION_FORBIDDEN"` (example)  
 - `request_id = "..."` (correlation)
 
 ## 5) Cloud proof (10–20s)
+
 **Say:**  
 “This isn’t just a local toy. Same logic runs on AWS Lambda with DynamoDB, deployed via Terraform, and the same invariants hold.”
 
-**Show:**  
+**Show:**
+
 - `evidence/attack_receipt_cloud.png`  
 - optionally `evidence/smoke_dev_output.png`
 
 **Honesty note (important):**  
-“The cloud demo uses header-derived identity for easy verification. In production, identity would come from JWT/authorizer claims — but the security shape stays the same.”
+“Locally, I use header-derived identity for deterministic testing. In the cloud, identity comes from Cognito JWT tokens via an API Gateway JWT authorizer; my Lambda only sees verified claims, which I map into the same `Principal` class and run through the same invariants.”
 
 ---
 
@@ -120,6 +136,7 @@ Use this like a menu. Keep it natural; don’t memorize verbatim.
 ## A) Local demo (deterministic, fast)
 
 ### A1) Setup
+
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 make install
@@ -145,6 +162,7 @@ curl -s http://127.0.0.1:8000/whoami \
 * `/health` returns:
 
   * `{"ok":true,"request_id":"..."}`
+
 * `/whoami` returns:
 
   * `{"user_id":"demo","tenant_id":"tenant-a","role":"intern"}`
@@ -200,9 +218,10 @@ make gate
 
 ---
 
-## B) Cloud demo (AWS Lambda + DynamoDB)
+## B) Cloud demo (AWS Lambda + DynamoDB + Cognito)
 
-> **Security note:** Cloud demo uses header-derived identity for verification. Production would derive identity from JWT/authorizer claims.
+> **Security note:**
+> Local demos use header-derived identity for speed. The AWS path uses **Cognito + API Gateway JWT authorizer**; Lambda never trusts client-supplied headers for identity, only verified JWT claims.
 
 ### B1) Deploy
 
@@ -213,33 +232,37 @@ make deploy-dev
 
 **Expected:**
 
-* Terraform prints:
+* Terraform prints: `base_url = "https://...execute-api...amazonaws.com"`
 
-  * `base_url = "https://...execute-api...amazonaws.com"`
+### B2) Authenticate & Verify (JWT Smoke Test)
 
-### B2) Verify (smoke test)
+This script gets a real OIDC token from Cognito and hits the API.
 
 ```bash
-make smoke-dev
+# 1. Get a token (fetch from Cognito using a test user)
+export JWT_TOKEN=$(aws cognito-idp initiate-auth \
+  --client-id <COGNITO_USER_POOL_CLIENT_ID> \
+  --auth-flow USER_PASSWORD_AUTH \
+  --auth-parameters USERNAME=<TEST_USERNAME>,PASSWORD="<TEST_PASSWORD>" \
+  --query "AuthenticationResult.IdToken" \
+  --output text)
+
+# 2. Run the authenticated smoke test
+make smoke-dev-jwt
 ```
 
 **Expected:**
 
-* `/health` ok
-* `/whoami` ok
-* `403` triggered for deny receipt test
-* output reminds you to check CloudWatch for `event=access_denied`
+* `✅ /whoami passed` (Principal derived from JWT claims)
+* `✅ 403 deny receipt triggered` (Intern token blocked from Admin action)
 
-### B3) Find the deny receipt in CloudWatch (and screenshot it)
+### B3) Find the deny receipt in CloudWatch
 
-* CloudWatch Logs → log group: `/aws/lambda/ai-security-gateway-dev`
-* Search for: `"event":"access_denied"`
+* CloudWatch Logs → `/aws/lambda/ai-security-gateway-dev`
+* Search for: `"access_denied"`
+* **Save screenshot:** `evidence/jwt_attack_receipt.png`
 
-Save screenshot as:
-
-* `evidence/attack_receipt_cloud.png`
-
-### B4) Teardown (cost hygiene)
+### B4) Teardown
 
 ```bash
 make destroy-dev
@@ -251,17 +274,11 @@ make destroy-dev
 
 ## “Isn’t header auth insecure?”
 
-Yes — and we explicitly say so.
+Yes — that’s why I only use it for local host networking.
 
-* Header-derived identity is used **only** to make the demo easy to verify.
-* In production, identity would come from trusted JWT/authorizer claims (Cognito/OIDC).
-* The enforcement pattern remains:
-
-  1. derive principal
-  2. scope permissions
-  3. retrieve only authorized records
-  4. generate safe snippets
-  5. emit auditable logs and deny receipts
+* **Locally:** I use headers (`X-User`, `X-Tenant`, `X-Role`) to keep unit tests and demos fast and deterministic.
+* **In AWS:** I use a **Cognito JWT Authorizer** at the API Gateway edge.
+* **The invariant:** My Lambda code is agnostic; it receives a mapped `Principal` object. Whether that Principal came from headers (local) or a signed JWT (cloud), the security policy enforcement is identical.
 
 ## “Where is enforcement actually happening?”
 
@@ -298,21 +315,22 @@ The deny receipt:
 **Cause:** mismatched code fences.
 **Fix:** every code block must open and close cleanly:
 
-````text
-```bash
+```text
+\`\`\`bash
 # commands...
-````
-
-````
+\`\`\`
+```
 
 ## 2) Local: `make test` passes but `make gate` fails
+
 **Meaning:** unit tests are green, but a **security invariant** regressed.
 
 Run:
+
 ```bash
 make test
 make gate
-````
+```
 
 Common regressions:
 
@@ -335,23 +353,23 @@ Checks:
 
 1. AWS identity:
 
-```bash
-make doctor-aws
-```
+   ```bash
+   make doctor-aws
+   ```
 
 2. Terraform outputs (confirm base URL):
 
-```bash
-cd infra/terraform && terraform output
-```
+   ```bash
+   cd infra/terraform && terraform output
+   ```
 
 3. CloudWatch logs:
 
-* log group: `/aws/lambda/ai-security-gateway-dev`
-* look for:
+   * log group: `/aws/lambda/ai-security-gateway-dev`
+   * look for:
 
-  * import/handler errors (packaging/path mismatch)
-  * DynamoDB permission errors
-  * missing env var (`TABLE_NAME`)
+     * import/handler errors (packaging/path mismatch)
+     * DynamoDB permission errors
+     * missing env var (`TABLE_NAME`)
 
 ```
