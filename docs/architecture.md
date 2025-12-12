@@ -19,7 +19,7 @@ graph LR
     end
 
     Audit --> Logs[(CloudWatch / Stdout)]
-````
+```
 
 ## Trust Model (What is trusted vs. attacker-controlled)
 

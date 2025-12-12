@@ -28,4 +28,8 @@ This document focuses on the primary security goal of this project:
 - **Key Management / Secrets:** Minimal secrets today (relies on IAM/Env). *Next:* Secrets Manager / Parameter Store integration.
 - **DoS / Abuse:** Currently relies on API Gateway defaults + Lambda scaling. *Next:* Implement API Gateway throttling and WAF (Phase 12).
 - **Data Encryption:** DynamoDB encryption at rest (AWS owned key). *Next:* Customer Managed Keys (CMK) for per-tenant encryption.
-- **Observability:** Add dashboards/alarms for deny rates, 4xx/5xx, latency, and cost (CloudWatch metrics + alarms).
+- **Observability:** Cloud demo now has CloudWatch metric filters + alarms on:
+  - high `access_denied` rate,
+  - API 5xx errors,
+  - API throttles.
+  *Next:* add latency SLOs + dashboards (and wire alarms to SNS/Slack).

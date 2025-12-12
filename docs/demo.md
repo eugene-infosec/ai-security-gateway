@@ -1,4 +1,4 @@
-# ⚡ Interview Demo Script & Runbook — AI Security Gateway (Retrieval-Safety-as-Code)
+# ⚡ Interview Demo Script & Runbook - AI Security Gateway (Retrieval-Safety-as-Code)
 
 This single file is intentionally **multi-purpose**:
 
@@ -14,7 +14,7 @@ A multi-tenant **retrieval gateway** that enforces **Auth-Before-Retrieval** and
 
 ## Why it matters (the security reality of RAG)
 
-In Retrieval-Augmented Generation systems, the most common critical leak is **not** the LLM — it’s retrieval pulling the **wrong tenant** or **wrong role** documents into the context window.  
+In Retrieval-Augmented Generation systems, the most common critical leak is **not** the LLM - it’s retrieval pulling the **wrong tenant** or **wrong role** documents into the context window.  
 Once the system fetches unauthorized text, you can’t “unfetch” it. Any “filter later” model is **hope-based** and fails real audits.
 
 ---
@@ -35,9 +35,9 @@ If a reviewer reads only a few items, point them here:
 
 The proof is executable:
 
-- `make test` — unit tests  
-- `make gate` — security misuse regression suite (invariant gates)  
-- `make ci` — one-command verification (same command used in GitHub Actions)
+- `make test` - unit tests  
+- `make gate` - security misuse regression suite (invariant gates)  
+- `make ci` - one-command verification (same command used in GitHub Actions)
 
 ---
 

@@ -1,5 +1,5 @@
 # AI Security Gateway: Retrieval-Safety-as-Code
-> **Status:** v0.3.0 — local + cloud (JWT) demo ready
+> **Status:** v0.3.0 - local + cloud (JWT) demo ready
 
 **A multi-tenant SaaS gateway that enables "AI-style retrieval" safely by enforcing non-negotiable security invariants.**
 
@@ -41,6 +41,7 @@ curl -i -X POST http://127.0.0.1:8000/ingest \
 - `evidence/smoke_dev_output.png` — output from `make smoke-dev` against the deployed AWS endpoint
 - `evidence/jwt_whoami.png` — JWT-based `/whoami` principal proof
 - `evidence/jwt_attack_receipt.png` — deny receipt in CloudWatch for a JWT-authenticated request
+- `evidence/alarms.png` — CloudWatch alarms for 5xx errors, throttles, and high deny rates (ops guardrails)
 
 -----
 
@@ -60,8 +61,8 @@ This system enforces four hard rules that cannot be bypassed by client code:
 ### Prerequisites
 
   * Python **3.12+**
-  * AWS CLI (configured) — for cloud demo
-  * Terraform — for cloud demo
+  * AWS CLI (configured) - for cloud demo
+  * Terraform - for cloud demo
 
 ### Run Locally
 
@@ -111,6 +112,15 @@ make smoke-dev
 make destroy-dev
 ```
 
+### 🧯 Ops Guardrails & Costs
+
+* [COSTS.md](COSTS.md) — cost model, Free Tier assumptions, and the `make destroy-dev` kill switch.
+* [docs/tradeoffs.md](docs/tradeoffs.md) — demo vs production trade-offs (identity, storage, observability).
+* **CloudWatch Alarms:**
+    * `ai-gateway-5xx-errors` (Availability)
+    * `ai-gateway-throttles` (Abuse / Load)
+    * `ai-gateway-high-denials` (Security Spikes)
+  
 ### Cloud Demo (JWT Mode)
 
 ```bash

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.4.0] - 2025-12-11
+### Added
+- **Operational Guardrails:** Implemented API Gateway throttling (50 RPS) and Log Retention (7 days).
+- **Observability:** Added CloudWatch Alarms for Security Spikes (High Denials), 5XX Errors, and Throttling events.
+- **Documentation:** Added `COSTS.md` (Run Rate analysis) and `docs/tradeoffs.md` (Architecture decisions).
+- **Tooling:** Added `make logs-cloud` for live log tailing and `make dev-reset` for cleanup.
+
 ## [v0.3.0] - 2025-12-10
 ### Added
 - Cognito + API Gateway JWT authorizer integration (JWT auth at the edge).

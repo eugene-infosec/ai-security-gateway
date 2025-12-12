@@ -9,6 +9,12 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
   auto_deploy = true
+
+  # Guardrail: Limit to 50 requests/sec (burst 100) to prevent billing spikes.
+  default_route_settings {
+    throttling_burst_limit = 100
+    throttling_rate_limit  = 50
+  }
 }
 
 resource "aws_apigatewayv2_integration" "lambda" {

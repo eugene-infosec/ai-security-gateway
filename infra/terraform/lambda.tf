@@ -42,7 +42,7 @@ resource "aws_lambda_function" "api" {
     variables = {
       TABLE_NAME = aws_dynamodb_table.docs.name
       # --- NEW: Tell the app to use JWT verification in Cloud ---
-      AUTH_MODE  = "jwt"
+      AUTH_MODE = "jwt"
     }
   }
   depends_on = [aws_cloudwatch_log_group.logs]

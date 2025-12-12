@@ -1,4 +1,4 @@
-.PHONY: doctor doctor-aws install run-local test gate ci deploy-dev destroy-dev package-lambda smoke-dev
+.PHONY: doctor doctor-aws install run-local test gate ci deploy-dev destroy-dev package-lambda smoke-dev smoke-dev-jwt clean clean-tf dev-reset logs-cloud
 
 # 1. SETUP & CHECKS
 doctor:
@@ -19,22 +19,24 @@ doctor-aws:
 
 # 2. LOCAL DEVELOPMENT
 install:
-	# Use python3 -m pip to match package-lambda consistency
-	python3 -m pip install -r requirements.txt
+	# Explicitly install into venv
+	.venv/bin/python3 -m pip install -r requirements.txt
 
 run-local:
 	@echo "Starting local API..."
-	uvicorn app.main:app --reload --port 8000
+	.venv/bin/uvicorn app.main:app --reload --port 8000
 
 # 3. TESTING & GATES
 test:
-	python3 -m pytest -q
+	# FIX: Explicitly use venv python to find pytest
+	.venv/bin/python3 -m pytest -q
 
 gate:
 	@echo "🔒 Running Security Gates..."
-	PYTHONPATH=. python3 evals/no_admin_leakage_gate.py
-	PYTHONPATH=. python3 evals/tenant_isolation_gate.py
-	PYTHONPATH=. python3 evals/safe_logging_gate.py
+	# FIX: Explicitly use venv python
+	PYTHONPATH=. .venv/bin/python3 evals/no_admin_leakage_gate.py
+	PYTHONPATH=. .venv/bin/python3 evals/tenant_isolation_gate.py
+	PYTHONPATH=. .venv/bin/python3 evals/safe_logging_gate.py
 	@echo "✨ ALL SECURITY GATES PASSED."
 
 ci: test gate
@@ -46,8 +48,8 @@ package-lambda:
 	@which zip >/dev/null || (echo "❌ 'zip' missing (install it)"; exit 1)
 	rm -rf build lambda_function.zip
 	mkdir -p build
-	# Use --upgrade to ensure no stale cache issues
-	python3 -m pip install -r requirements.txt -t build --upgrade
+	# Use --upgrade to ensure no stale cache issues; force install to build/
+	.venv/bin/python3 -m pip install -r requirements.txt -t build --upgrade
 	cp -r app build/
 	# Exclude junk to keep zip clean
 	cd build && zip -r ../lambda_function.zip . -x "*__pycache__*" "*.dist-info/*RECORD*"
@@ -62,7 +64,7 @@ destroy-dev:
 	cd infra/terraform && terraform destroy -auto-approve
 
 smoke-dev:
-	@echo "☁️ Running Smoke Test..."
+	@echo "☁️ Running Smoke Test (Header Mode)..."
 	$(eval API_URL := $(shell cd infra/terraform && terraform output -raw base_url))
 	@echo "Target: $(API_URL)"
 	# 1. Liveness Check
@@ -78,22 +80,8 @@ smoke-dev:
 	  -d '{"title":"HACK","body":"x","classification":"admin"}' | grep 403 && echo "✅ 403 triggered"
 	@echo "Audit: Check CloudWatch logs for event=access_denied"
 
-.PHONY: clean clean-tf
-
-clean:
-	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
-	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
-	rm -rf build dist lambda_function.zip
-
-clean-tf:
-	rm -rf infra/terraform/.terraform
-	rm -f infra/terraform/terraform.tfstate infra/terraform/terraform.tfstate.backup infra/terraform/.terraform.tfstate.lock.info
-	rm -f terraform.tfstate terraform.tfstate.backup .terraform.tfstate.lock.info
-
-.PHONY: smoke-dev-jwt
-
 smoke-dev-jwt:
-	@echo "☁️ Running Smoke Test (JWT)..."
+	@echo "☁️ Running Smoke Test (JWT Mode)..."
 	@if [ -z "$$JWT_TOKEN" ]; then echo "❌ Set JWT_TOKEN env var"; exit 1; fi
 	$(eval API_URL := $(shell cd infra/terraform && terraform output -raw base_url))
 	@echo "Target: $(API_URL)"
@@ -110,3 +98,21 @@ smoke-dev-jwt:
 		-d '{"title":"HACK","body":"x","classification":"admin"}' \
 		| grep 403 && echo "✅ 403 deny receipt triggered" || \
 		(echo "❌ expected 403"; exit 1)
+
+# 5. UTILITIES & CLEANUP
+clean:
+	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
+	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+	rm -rf build dist lambda_function.zip
+
+clean-tf:
+	rm -rf infra/terraform/.terraform
+	rm -f infra/terraform/terraform.tfstate infra/terraform/terraform.tfstate.backup infra/terraform/.terraform.tfstate.lock.info
+	rm -f terraform.tfstate terraform.tfstate.backup .terraform.tfstate.lock.info
+
+dev-reset: clean clean-tf
+	@echo "♻️ Environment Reset Complete."
+
+logs-cloud:
+	@echo "Logs: /aws/lambda/ai-security-gateway-dev (Last 10m)"
+	aws logs tail /aws/lambda/ai-security-gateway-dev --follow --since 10m
