@@ -1,0 +1,67 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+.cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---- Environment / secrets (never commit) ----
+.env
+.env.*
+.envrc
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.kdbx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# ---- Terraform (never commit state or local plans) ----
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.tfvars.json
+
+# IMPORTANT: DO commit provider lockfile
+!.terraform.lock.hcl
+
+# ---- AWS / Serverless build artifacts ----
+lambda_function.zip
+*.zip
+.aws-sam/
+.serverless/
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---- Logs / temp evidence ----
+*.log
+evidence/temp/
