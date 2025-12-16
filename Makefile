@@ -41,7 +41,8 @@ tf-check:
 # 3. TESTING & GATES
 test:
 	@echo "🧪 Running Unit Tests..."
-	.venv/bin/pytest -q || echo "⚠️ Tests skipped (no tests/ yet)"
+	# FIX: Add PYTHONPATH=. so pytest finds 'app'
+	PYTHONPATH=. .venv/bin/pytest -q || echo "⚠️ Tests skipped (no tests/ yet)"
 
 gate:
 	@echo "🔒 Running Security Gates..."
@@ -54,3 +55,8 @@ preflight: fmt lint sec test gate tf-check
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage dist build
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+
+# 5. LOCAL DEV
+run-local:
+	@echo "🚀 Starting local API..."
+	.venv/bin/uvicorn app.main:app --reload --port 8000
