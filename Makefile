@@ -41,8 +41,7 @@ tf-check:
 # 3. TESTING & GATES
 test:
 	@echo "🧪 Running Unit Tests..."
-	# FIX: Add PYTHONPATH=. so pytest finds 'app'
-	PYTHONPATH=. .venv/bin/pytest -q || echo "⚠️ Tests skipped (no tests/ yet)"
+	PYTHONPATH=. .venv/bin/pytest -q
 
 gate:
 	@echo "🔒 Running Security Gates..."
