@@ -4,7 +4,7 @@
 | ID  | File | Claim / Proof |
 | :-- | :--- | :------------ |
 | E00 | `INDEX.md` | This index file |
-| E01 | `attack_receipt.png` | Local deny receipt fields (`event`, `reason_code`, `request_id`) |
+| E01 | `E01_attack_receipt_local.png` | Local deny receipt (structured log) |
 | E02 | `ci_gate_fail.png` | CI blocks regression (admin leakage) |
 | E03 | `attack_receipt_cloud.png` | AWS CloudWatch log showing deny receipt |
 | E04 | `smoke_dev_output.png` | Successful `make smoke-dev` execution |
