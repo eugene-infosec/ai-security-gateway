@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 from fastapi import FastAPI, Request
+from app.security.principal import resolve_principal_from_headers
+from app.security.audit import audit
 
 app = FastAPI(title="AI Security Gateway")
 
@@ -27,10 +29,22 @@ def health(request: Request):
 
 @app.get("/whoami")
 def whoami(request: Request):
-    # Proof of Identity Context (foundation for Phase 2)
+    # 1. Resolve Identity
+    p = resolve_principal_from_headers(request.headers)
+
+    # 2. Audit the access (Proof of Audit)
+    audit(
+        "identity_resolved",
+        user_id=p.user_id,
+        tenant_id=p.tenant_id,
+        role=p.role,
+        request_id=request.state.request_id,
+    )
+
+    # 3. Return context
     return {
-        "user_id": request.headers.get("X-User", "anonymous"),
-        "tenant_id": request.headers.get("X-Tenant", "unknown"),
-        "role": request.headers.get("X-Role", "unknown"),
+        "user_id": p.user_id,
+        "tenant_id": p.tenant_id,
+        "role": p.role,
         "request_id": request.state.request_id,
     }
