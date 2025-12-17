@@ -3,6 +3,17 @@
 
 **A multi-tenant SaaS gateway that enables "AI-style retrieval" safely by enforcing non-negotiable security invariants.**
 
+## Docs (Truth-scoped)
+
+These docs are accurate as of **v0.3.0** and will be updated only when features land.
+
+- Architecture: `docs/architecture.md`
+- Threat model: `docs/threat_model.md`
+- Tradeoffs: `docs/tradeoffs.md`
+- Runbook: `docs/runbook.md`
+- Demo script: `docs/demo.md`
+- Costs: `COSTS.md`
+
 ## ⚡ Quick Start
 
 ### Setup
@@ -22,7 +33,7 @@ make run-local
 
 * **Trigger a 403 Forbidden:**
 ```bash
-curl -i -X POST [http://127.0.0.1:8000/ingest](http://127.0.0.1:8000/ingest) \
+curl -i -X POST http://127.0.0.1:8000/ingest \
   -H 'Content-Type: application/json' \
   -H 'X-User: malicious_intern' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
   -d '{"title":"HACK","body":"x","classification":"admin"}'

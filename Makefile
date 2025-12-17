@@ -52,8 +52,7 @@ tf-validate: package-lambda
 # 3. TESTING & GATES
 test:
 	@echo "🧪 Running Unit Tests..."
-	# FIX: Add PYTHONPATH=. so pytest can find 'app'
-	PYTHONPATH=. .venv/bin/pytest -q
+	PYTHONPATH=. .venv/bin/python3 -m pytest -q
 
 gate:
 	@echo "🔒 Running Security Gates..."
