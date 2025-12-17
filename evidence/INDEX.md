@@ -9,5 +9,5 @@
 | E03 | `E03_smoke_dev_output.png` | Dev smoke passes against AWS (`make smoke-dev`) |
 | E04 | `E04_attack_receipt_cloud.png` | CloudWatch deny receipt exists (403) |
 | E05 | `E05_alarms.png` | CloudWatch alarms (errors/throttles/high denials) |
-| E06 | `jwt_attack_receipt.png` | CloudWatch deny receipt for JWT user |
-| E07 | `alarms.png` | CloudWatch alarms (Ops Guardrails) |
+| E06 | `E06_jwt_whoami.png` | JWT `/whoami` proves principal derived from verified claims (tenant/role) |
+| E07 | `E07_jwt_attack_receipt_cloud.png` | JWT-authenticated deny receipt in CloudWatch (`access_denied`, `reason_code`, `request_id`) |

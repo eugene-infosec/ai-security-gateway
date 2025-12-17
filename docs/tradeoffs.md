@@ -1,5 +1,5 @@
 # Tradeoffs
-> Truth scope: accurate as of **v0.3.0**. Items marked **Planned** are not implemented yet.
+> Truth scope: accurate as of **v0.4.0**.
 
 ## Local identity vs Cloud identity
 - Local uses header identity for deterministic demos and invariant tests.
@@ -21,5 +21,4 @@
 - Tradeoff: less detailed debugging logs, but safer by default.
 
 ## Cloud scope
-- Current: “dev slice” demonstrates deployment, alarms, and deny receipts.
-- Tradeoff: not production-complete (no JWT yet, no persistence yet).
+- Current: Production-shaped Principal from verified JWT claims.

@@ -1,5 +1,5 @@
 # Demo Script (2–5 minutes)
-> Truth scope: accurate as of **v0.3.0**
+> Truth scope: accurate as of **v0.4.0**
 
 ## 1) Prove the invariants (local)
 Run the invariant harness:
@@ -42,7 +42,7 @@ make destroy-dev
 
 Point to evidence/INDEX.md (E03–E05).
 
-## Planned next (Phase 6)
+## Implemented next (Phase 6)
 
     JWT authorizer at API Gateway
 

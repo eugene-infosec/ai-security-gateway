@@ -1,5 +1,5 @@
 # Threat Model
-> Truth scope: accurate as of **v0.3.0**. Items marked **Planned** are not implemented yet.
+> Truth scope: accurate as of **v0.4.0**.
 
 ## Assets
 - Tenant documents (titles/snippets/bodies)
@@ -33,5 +33,5 @@
 ### T5: Misconfiguration drift (cloud)
 - Mitigation: Terraform fmt/validate checks and repeatable Make targets
 
-## Planned threats (Phase 6+)
-- Token spoofing / identity tampering → JWT authorizer at API Gateway (Planned)
+## Implemented threats (Phase 6+)
+- Token spoofing / identity tampering → JWT authorizer at API Gateway (Done).

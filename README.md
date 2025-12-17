@@ -1,5 +1,5 @@
 # AI Security Gateway
-> **Status:** v0.3.0 - Deployed dev slice (Lambda + API Gateway + alarms + deny receipts)
+> **Status:** v0.4.0 - JWT at the edge (Cognito + API Gateway authorizer) + cloud deny receipts
 
 **A multi-tenant SaaS gateway that enables "AI-style retrieval" safely by enforcing non-negotiable security invariants.**
 
@@ -56,14 +56,24 @@ PASS tenant_isolation_gate
 
 PASS safe_logging_gate
 
-## Cloud Demo (Dev)
+## Cloud Demo (Dev, JWT)
 
 ```bash
 make doctor-aws
 make deploy-dev
-make smoke-dev
+
+# 1) Create test user (Cognito)
+scripts/cognito_bootstrap_user.sh test-intern tenant-a intern
+
+# 2) Get JWT into your shell
+source scripts/auth.sh
+
+# 3) Prove JWT principal + deny receipt
+make smoke-dev-jwt
 make logs-cloud
+
+# 4) Cost safety
 make destroy-dev
 ```
 
-Evidence: see evidence/INDEX.md (E03–E05).
+Evidence: see evidence/INDEX.md (E06–E07).

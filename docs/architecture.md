@@ -1,5 +1,5 @@
 # Architecture
-> Truth scope: accurate as of **v0.3.0**. Items marked **Planned** are not implemented yet.
+> Truth scope: accurate as of **v0.4.0**.
 
 ## Goal
 A multi-tenant gateway that enables “AI-style retrieval” while enforcing non-negotiable security invariants.
@@ -34,6 +34,6 @@ Deployed via Terraform:
   - `safe_logging_gate`
 - Evidence is indexed in `evidence/INDEX.md`.
 
-**Planned (Phase 6):**
+**Implemented (Phase 6):**
 - JWT at the edge (API Gateway JWT authorizer)
 - Principal derived from JWT claims in cloud

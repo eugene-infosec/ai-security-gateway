@@ -1,3 +1,11 @@
+## [0.4.0] - 2025-12-17
+### Added
+- Cognito User Pool + Client for JWT issuance (custom claims: tenant_id, role).
+- API Gateway HTTP API JWT authorizer; `/health` public, all other routes require JWT.
+- Lambda runs in `AUTH_MODE=jwt` and derives Principal from verified JWT claims.
+- JWT smoke test: `make smoke-dev-jwt`.
+- Evidence: `E06_jwt_whoami.png`, `E07_jwt_attack_receipt_cloud.png`.
+
 ## [0.3.0] - 2025-12-17
 ### Added
 - AWS dev deployment via Terraform (Lambda + HTTP API).

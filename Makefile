@@ -100,6 +100,26 @@ smoke-dev:
 	  -H 'X-User: malicious_intern' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
 	  -d '{"title":"HACK","body":"x","classification":"admin"}' | grep 403 && echo "✅ 403 deny triggered" || (echo "❌ expected 403" && exit 1)
 
+smoke-dev-jwt:
+	@echo "☁️ Smoke Test (JWT Mode)..."
+	@if [ -z "$$JWT_TOKEN" ]; then echo "❌ Set JWT_TOKEN first: source scripts/auth.sh"; exit 1; fi
+	$(eval API_URL := $(shell terraform -chdir=infra/terraform output -raw base_url))
+	@echo "Target: $(API_URL)"
+
+	@echo "1) /health (public)"
+	@curl -s "$(API_URL)/health" | grep "ok" && echo "✅ /health passed" || (echo "❌ /health failed"; exit 1)
+
+	@echo "2) /whoami (JWT)"
+	@curl -s "$(API_URL)/whoami" -H "Authorization: Bearer $$JWT_TOKEN" | grep "tenant_id" \
+	  && echo "✅ /whoami passed" || (echo "❌ /whoami failed"; exit 1)
+
+	@echo "3) Trigger deny (JWT, expect 403)"
+	@curl -s -o /dev/null -w "%{http_code}\n" -X POST "$(API_URL)/ingest" \
+	  -H 'Content-Type: application/json' \
+	  -H "Authorization: Bearer $$JWT_TOKEN" \
+	  -d '{"title":"HACK","body":"x","classification":"admin"}' | grep 403 \
+	  && echo "✅ 403 deny triggered" || (echo "❌ expected 403"; exit 1)
+
 logs-cloud:
 	@echo "Logs (last 10m): /aws/lambda/ai-security-gateway-dev"
 	aws logs tail /aws/lambda/ai-security-gateway-dev --follow --since 10m

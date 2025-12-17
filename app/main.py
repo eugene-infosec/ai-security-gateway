@@ -1,9 +1,8 @@
-from __future__ import annotations
-
+import os
 import uuid
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
+from mangum import Mangum
 
-# Consolidated imports
 from app.models import (
     IngestRequest,
     IngestResponse,
@@ -12,23 +11,42 @@ from app.models import (
     QueryResult,
 )
 from app.store import STORE
-from app.security.principal import resolve_principal_from_headers
 from app.security.audit import audit, sha256_hex
 from app.security.policy import authorize_ingest
+from app.security.jwt_claims import get_jwt_claims_from_asgi_scope
+from app.security.principal import (
+    resolve_principal_from_headers,
+    resolve_principal_from_jwt_claims,
+)
 
 app = FastAPI(title="AI Security Gateway")
+
+AUTH_MODE = os.environ.get("AUTH_MODE", "headers")  # headers | jwt
+
+
+def resolve_principal(request: Request):
+    if AUTH_MODE == "jwt":
+        claims = get_jwt_claims_from_asgi_scope(request.scope)
+        if not claims:
+            raise HTTPException(
+                status_code=401, detail="Missing/invalid JWT (no claims)"
+            )
+        try:
+            return resolve_principal_from_jwt_claims(claims)
+        except ValueError as e:
+            raise HTTPException(status_code=401, detail=str(e)) from e
+
+    return resolve_principal_from_headers(request.headers)
+
+
+# ... (Middleware & Health Check remain same) ...
 
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
-    # 1. Generate Correlation ID
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
-
-    # 2. Process Request
     response = await call_next(request)
-
-    # 3. Return ID header
     response.headers["X-Request-Id"] = request_id
     return response
 
@@ -40,7 +58,7 @@ def health(request: Request):
 
 @app.get("/whoami")
 def whoami(request: Request):
-    p = resolve_principal_from_headers(request.headers)
+    p = resolve_principal(request)  # <--- CHANGED
     audit(
         "identity_resolved",
         user_id=p.user_id,
@@ -58,9 +76,8 @@ def whoami(request: Request):
 
 @app.post("/ingest", response_model=IngestResponse)
 def ingest(payload: IngestRequest, request: Request):
-    p = resolve_principal_from_headers(request.headers)
+    p = resolve_principal(request)  # <--- CHANGED
 
-    # 1. Authorize
     authorize_ingest(
         principal=p,
         classification=payload.classification,
@@ -68,7 +85,6 @@ def ingest(payload: IngestRequest, request: Request):
         path=str(request.url.path),
     )
 
-    # 2. Store (In-Memory)
     doc = STORE.put(
         tenant_id=p.tenant_id,
         classification=payload.classification,
@@ -87,17 +103,13 @@ def ingest(payload: IngestRequest, request: Request):
 
 @app.post("/query", response_model=QueryResponse)
 def query(payload: QueryRequest, request: Request):
-    p = resolve_principal_from_headers(request.headers)
+    p = resolve_principal(request)  # <--- CHANGED
 
-    # 1. Scope Calculation (Auth-Before-Retrieval)
     allowed = {"public", "admin"} if p.role == "admin" else {"public"}
-
-    # 2. Scoped Fetch (The Invariant)
     scoped_docs = STORE.list_scoped(
         tenant_id=p.tenant_id, allowed_classifications=allowed
     )
 
-    # 3. In-Memory Search (Lexical)
     q = payload.query.strip().lower()
     tokens = [t for t in q.split() if t]
 
@@ -108,17 +120,11 @@ def query(payload: QueryRequest, request: Request):
     ranked = sorted(scoped_docs, key=score, reverse=True)
     ranked = [d for d in ranked if score(d) > 0][:10]
 
-    # 4. Result Projection
     results = [
-        QueryResult(
-            doc_id=d.doc_id,
-            title=d.title,
-            snippet=d.body[:160],
-        )
+        QueryResult(doc_id=d.doc_id, title=d.title, snippet=d.body[:160])
         for d in ranked
     ]
 
-    # 5. Safe Audit
     audit(
         "query_allowed",
         tenant_id=p.tenant_id,
@@ -132,3 +138,10 @@ def query(payload: QueryRequest, request: Request):
     )
 
     return QueryResponse(request_id=request.state.request_id, results=results)
+
+
+# Lambda Handler
+
+stage = os.environ.get("ENV", "dev")
+root_path = f"/{stage}" if stage else ""
+handler = Mangum(app, api_gateway_base_path=root_path)

@@ -1,5 +1,5 @@
 # Runbook (Dev)
-> Truth scope: accurate as of **v0.3.0**
+> Truth scope: accurate as of **v0.4.0**
 
 ## Local workflow
 - Install: `make install`
