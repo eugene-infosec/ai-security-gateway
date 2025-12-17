@@ -1,5 +1,5 @@
 # AI Security Gateway
-> **Status:** v0.2.0 - Local retrieval boundary + security gates (admin leakage, tenant isolation, safe logging)
+> **Status:** v0.3.0 - Deployed dev slice (Lambda + API Gateway + alarms + deny receipts)
 
 **A multi-tenant SaaS gateway that enables "AI-style retrieval" safely by enforcing non-negotiable security invariants.**
 
@@ -44,3 +44,15 @@ PASS no_admin_leakage_gate
 PASS tenant_isolation_gate
 
 PASS safe_logging_gate
+
+## Cloud Demo (Dev)
+
+```bash
+make doctor-aws
+make deploy-dev
+make smoke-dev
+make logs-cloud
+make destroy-dev
+```
+
+Evidence: see evidence/INDEX.md (E03–E05).

@@ -52,6 +52,13 @@ resource "aws_lambda_function" "gateway" {
 
   memory_size = 128
   timeout     = 10
+
+  environment {
+    variables = {
+      LOG_LEVEL = "INFO"
+      ENV       = "dev"
+    }
+  }
 }
 
 # Log group with retention (cost/control)

@@ -1,3 +1,9 @@
+## [0.3.0] - 2025-12-17
+### Added
+- AWS dev deployment via Terraform (Lambda + HTTP API).
+- Lambda packaging to `dist/lambda.zip`.
+- CloudWatch log retention + alarms (errors, throttles, high denials) + deny metric filter.
+- Evidence: `E03_smoke_dev_output.png`, `E04_attack_receipt_cloud.png`, `E05_alarms.png`.
 
 ## [0.2.0] - 2025-12-16
 ### Added
