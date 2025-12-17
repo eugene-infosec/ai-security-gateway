@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 from pydantic import BaseModel, Field
+from typing import List
 
 Classification = Literal["public", "admin"]
 
@@ -15,3 +16,18 @@ class IngestRequest(BaseModel):
 class IngestResponse(BaseModel):
     doc_id: str
     request_id: str
+
+
+class QueryRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=300)
+
+
+class QueryResult(BaseModel):
+    doc_id: str
+    title: str
+    snippet: str
+
+
+class QueryResponse(BaseModel):
+    request_id: str
+    results: List[QueryResult]

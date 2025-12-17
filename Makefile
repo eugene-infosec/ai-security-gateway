@@ -45,7 +45,10 @@ test:
 
 gate:
 	@echo "🔒 Running Security Gates..."
-	@echo "⚠️ Gates skipped (not implemented yet)"
+	PYTHONPATH=. .venv/bin/python3 evals/no_admin_leakage_gate.py
+	PYTHONPATH=. .venv/bin/python3 evals/tenant_isolation_gate.py
+	PYTHONPATH=. .venv/bin/python3 evals/safe_logging_gate.py
+	@echo "✨ ALL SECURITY GATES PASSED."
 
 # 4. THE GOLDEN RULE
 preflight: fmt lint sec test gate tf-check

@@ -1,5 +1,5 @@
 # AI Security Gateway
-> **Status:** v0.1.0 — Local deny receipt (policy + audit receipt)
+> **Status:** v0.2.0 - Local retrieval boundary + security gates (admin leakage, tenant isolation, safe logging)
 
 **A multi-tenant SaaS gateway that enables "AI-style retrieval" safely by enforcing non-negotiable security invariants.**
 
@@ -29,3 +29,18 @@ curl -i -X POST [http://127.0.0.1:8000/ingest](http://127.0.0.1:8000/ingest) \
   ```
 
 See evidence/E01_attack_receipt_local.png for the expected audit output.
+
+## Proof (Security Invariant Regression Harness)
+
+Run:
+```bash
+make gate
+```
+
+Expected:
+
+PASS no_admin_leakage_gate
+
+PASS tenant_isolation_gate
+
+PASS safe_logging_gate
