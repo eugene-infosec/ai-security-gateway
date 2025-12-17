@@ -1,12 +1,23 @@
-# Costs
-> Truth scope: accurate as of **v0.3.0** (dev demo)
+# Cost Analysis & Operational Guardrails
+> Truth scope: accurate as of **v0.5.0** (dev demo shape).
 
 This repo is designed to be cheap-by-default (serverless, short log retention, fast teardown).
 
-## Cost controls
-- Kill switch: `make destroy-dev` (run after every demo)
-- CloudWatch log retention is set (7 days)
-- Alarms exist to surface errors/throttles/deny spikes
+## Estimated run rate (idle)
 
-## Notes
-Actual AWS cost depends on request volume and AWS pricing. Use AWS Billing / Cost Explorer if you need exact numbers during longer testing.
+| Service | Assumption | Est. Cost |
+| :-- | :-- | :-- |
+| Lambda | Free tier likely covers idle demo usage | $0.00 |
+| API Gateway (HTTP API) | Free tier likely covers demo usage | $0.00 |
+| Cognito | MAU free tier likely covers demo users | $0.00 |
+| CloudWatch | Logs + a few alarms; 7-day retention | Low (typically cents) |
+| **Total** | Dev demo usage | **~<$1 / month** |
+
+> Actual cost depends on usage and regional pricing. For longer testing, use AWS Billing / Cost Explorer.
+
+## Operational guardrails
+
+1) **Kill switch:** `make destroy-dev` destroys dev infra immediately.
+2) **Log retention:** 7 days to cap storage cost.
+3) **Alarms:** 5xx errors, throttles, high denials.
+4) **Throttling:** enforced at the edge (API Gateway) to reduce abuse risk.

@@ -14,6 +14,7 @@ from app.store import STORE
 from app.security.audit import audit, sha256_hex
 from app.security.policy import authorize_ingest
 from app.security.jwt_claims import get_jwt_claims_from_asgi_scope
+from app.security.redact import redact_text
 from app.security.principal import (
     resolve_principal_from_headers,
     resolve_principal_from_jwt_claims,
@@ -103,13 +104,15 @@ def ingest(payload: IngestRequest, request: Request):
 
 @app.post("/query", response_model=QueryResponse)
 def query(payload: QueryRequest, request: Request):
-    p = resolve_principal(request)  # <--- CHANGED
+    p = resolve_principal(request)
 
+    # 1. Scope Calculation
     allowed = {"public", "admin"} if p.role == "admin" else {"public"}
     scoped_docs = STORE.list_scoped(
         tenant_id=p.tenant_id, allowed_classifications=allowed
     )
 
+    # 2. Ranking (Simple Keyword Match)
     q = payload.query.strip().lower()
     tokens = [t for t in q.split() if t]
 
@@ -120,8 +123,14 @@ def query(payload: QueryRequest, request: Request):
     ranked = sorted(scoped_docs, key=score, reverse=True)
     ranked = [d for d in ranked if score(d) > 0][:10]
 
+    # 3. Projection & Redaction (Defense in Depth)
     results = [
-        QueryResult(doc_id=d.doc_id, title=d.title, snippet=d.body[:160])
+        QueryResult(
+            doc_id=d.doc_id,
+            title=d.title,
+            # SAFETY: Redact the snippet before it leaves the trust boundary
+            snippet=redact_text(d.body[:160]),
+        )
         for d in ranked
     ]
 
