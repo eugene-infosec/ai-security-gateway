@@ -1,52 +1,86 @@
 # AI Security Gateway
+
 **Retrieval-Safety-as-Code:** a production-shaped multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
 
 > **Status:** **v0.5.0** - JWT at the edge (Cognito + API Gateway authorizer), deny receipts, security gates, ops guardrails, and **snippet redaction**.
-> **Design principle:** security decisions are **metadata-based**, not prompt-based, and they depend on `Principal` + tenant scope + classification, not on what a user asks.
+> **Where it fits:** place this gateway between your app/LLM and your knowledge store; it becomes the single enforced path for retrieval + snippets in a multi-tenant system.
+> **Design principle:** security decisions are **metadata-based**, not prompt-based; they depend on `Principal` + tenant scope + classification, not on what a user asks.
 
 ---
 
 ## What this is
-A production-shaped **retrieval gateway** for RAG-style systems that enforces **Auth-Before-Retrieval** inside a strict trust boundary and emits structured **deny receipts** for every blocked action.
+
+## 🎬 See it in action (80s)
+
+> **"Stop patching prompts. Start securing retrieval."**
+
+[![Watch the Demo](evidence/E01_attack_receipt_local.png)](evidence/demo.mp4)
+
+*Click the image above to watch the full architecture and attack demo (with audio).*
+
+A production-shaped **retrieval gateway** for RAG-style systems. The intended use case is simple and realistic:
+
+> **Teams building “chat over docs / RAG features” must call this gateway for retrieval (and snippets) instead of querying the document store directly.**
+
+This gateway enforces **Auth-Before-Retrieval** inside a strict trust boundary and emits structured **deny receipts** for every blocked action.
 
 In RAG, the common critical leak is not “the LLM,” it’s **retrieval fetching the wrong tenant or wrong role**. Once unauthorized text enters the context window, you can’t “unfetch” it. This project prevents that failure mode by enforcing scope *before* storage reads and snippet generation.
+
+### Concrete scenario (what it blocks)
+
+* An **intern in Tenant A** tries to retrieve:
+
+  * an **admin-classified runbook**, or
+  * **Tenant B’s roadmap**
+* Result: **blocked (403)** + **deny receipt** with `request_id` + `reason_code` (auditable, screenshot-safe).
+
+### Why lexical search (intentional)
+
+Retrieval is currently **deterministic lexical scoring** on purpose: the thesis is the **security boundary and invariants**, not embeddings quality. Vector search can be added later **without changing the invariants**.
 
 ---
 
 ## Non-negotiable security invariants
+
 These invariants are enforced by code and continuously checked by `make gate`:
 
-1) **No Admin Leakage**
+1. **No Admin Leakage**
    Non-admin roles must never retrieve admin-classified content (titles/snippets/bodies).
 
-2) **Strict Tenant Isolation**
+2. **Strict Tenant Isolation**
    Tenant A must never retrieve Tenant B data (structural scoping in storage keys + server-side authority).
 
-3) **Safe Logging**
+3. **Safe Logging**
    Logs must never contain raw request bodies/queries/auth headers/tokens.
 
-4) **Evidence-over-Claims**
+4. **Evidence-over-Claims**
    Every denial is traceable via `request_id` and backed by numbered evidence artifacts.
+
+5. **No Secret Egress via Snippets**
+   Snippet output is redacted to prevent accidental secret leakage.
 
 ---
 
 ## Trust boundary
-- **Untrusted inputs:** request headers/body, query text, stored document text, any client-supplied claims.
-- **Trusted compute boundary:** principal derivation, policy evaluation, tenant scoping, snippet redaction, audit logging.
+
+* **Untrusted inputs:** request headers/body, query text, stored document text, any client-supplied claims.
+* **Trusted compute boundary:** principal derivation, policy evaluation, tenant scoping, snippet redaction, audit logging.
 
 ### Identity modes
-- **Local dev:** deterministic header identity (`X-User`, `X-Tenant`, `X-Role`) for fast tests and demos.
-- **Cloud dev:** **Cognito JWT authorizer at API Gateway**; Lambda derives `Principal` from verified claims.
+
+* **Local dev:** deterministic header identity (`X-User`, `X-Tenant`, `X-Role`) for fast tests and demos.
+* **Cloud dev:** **Cognito JWT authorizer at API Gateway**; Lambda derives `Principal` from verified claims.
 
 ---
 
 ## ⚡ Start here (2 minutes)
 
 ### 1) Run the proof harness (security gates)
+
 ```bash
 make ci
 # or: make gate
-````
+```
 
 ### 2) Trigger a deny receipt (local)
 
@@ -60,7 +94,7 @@ curl -i -X POST http://127.0.0.1:8000/ingest \
   -d '{"title":"HACK","body":"x","classification":"admin"}'
 ```
 
-Result: HTTP 403 and a structured audit log in stdout.
+Result: HTTP 403 and a structured audit log in stdout (deny receipt).
 
 ### 3) Verify proof (evidence artifacts)
 
@@ -80,7 +114,7 @@ All claims are backed by screenshots in `evidence/INDEX.md` (highlights below).
 
 * `app/` - FastAPI app + Lambda handler
 * `app/security/` - principal, policy, audit, JWT mapping, redaction engine
-* `evals/` - misuse regression suite (“security gates”)
+* `evals/` - security invariant regression harness (“security gates”)
 * `infra/terraform/` - AWS dev slice (Lambda + HTTP API + Cognito + alarms)
 * `docs/` - architecture, threat model, runbook, tradeoffs, decisions
 * `evidence/` - numbered proof artifacts + index
@@ -130,6 +164,18 @@ make destroy-dev
 
 ---
 
+## 🎬 Demo framing (2-10 minutes)
+
+This is the quickest “real system” story to tell:
+
+1. **Use case:** “Our app must call this gateway for retrieval instead of hitting the store directly.”
+2. **Threat:** “Intern in Tenant A tries to retrieve admin runbook / Tenant B roadmap.”
+3. **Result:** “Blocked before retrieval; deny receipt emitted; CI gates prevent regressions.”
+
+For the full walkthrough: `docs/demo.md`.
+
+---
+
 ## 📚 Documentation (truth-scoped)
 
 * Architecture: `docs/architecture.md`
@@ -137,6 +183,7 @@ make destroy-dev
 * Tradeoffs: `docs/tradeoffs.md`
 * Runbook: `docs/runbook.md`
 * Costs: `COSTS.md`
+* Decisions (ADRs): `docs/decisions/`
 
 ---
 

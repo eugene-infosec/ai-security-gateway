@@ -1,14 +1,30 @@
 # ADR 0001: Authorization Before Retrieval
 
+> Truth scope: accurate as of **v0.5.0**.
+
 ## Context
-RAG systems typically use a "Fetch-then-Filter" pattern: fetch top-k documents, then filter out the ones the user isn't allowed to see.
-**Risk:** This creates a "Silent Leakage" window where unauthorized data enters the application memory and context window. If the filter has a bug, data leaks.
+
+Many RAG implementations follow a **fetch-then-filter** pattern: retrieve top-*k* documents, then remove any results the user should not see.
+
+**Risk:** this creates a “silent leakage” window where unauthorized text is fetched into application memory (and can enter snippet generation / context windows). If filtering is buggy, incomplete, or bypassed, sensitive content can leak.
 
 ## Decision
-We enforce **Auth-Before-Retrieval**.
-The `PolicyEngine` calculates the allowed scope (e.g., `tenant_id` AND `classification`) *before* the database query is constructed. The storage layer only executes queries bounded by this scope.
+
+Enforce **Auth-Before-Retrieval** as a non-negotiable invariant.
+
+The gateway derives a `Principal` (user, tenant, role) and uses the `PolicyEngine` to compute an **allowed retrieval scope** (e.g., `tenant_id` + allowed `classification` set) **before** constructing any storage query or retrieval candidate set.
+
+Storage reads are tenant-scoped by design (structural isolation), and retrieval/snippet generation runs only on the already-authorized candidate set.
 
 ## Consequences
-- **Positive**: Unauthorized data never leaves the database. "Admin" documents are never fetched for "Interns".
-- **Positive**: Performance is predictable; we never fetch data we plan to discard.
-- **Negative**: Complex permission rules must be mappable to database query keys (structural isolation).
+
+### Positive
+
+* Unauthorized data is never fetched into the retrieval/snippet path (stronger security boundary).
+* Security properties are testable and regression-resistant (`make gate` asserts the invariant).
+* More predictable performance: no wasted reads of data that would be discarded later.
+
+### Negative
+
+* Authorization rules must be expressible as **scope constraints** (tenant/classification) that can be enforced structurally.
+* Some advanced policy models (e.g., per-row ABAC with many attributes) may require additional indexing or a more expressive authorization layer to preserve auth-before-retrieval at scale.

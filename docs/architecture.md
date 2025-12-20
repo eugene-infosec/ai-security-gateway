@@ -1,13 +1,29 @@
 # Architecture
+
 > Truth scope: accurate as of **v0.5.0**.
 
 ## Goal
+
 A multi-tenant gateway that enables “AI-style retrieval” while enforcing non-negotiable security invariants **inside** a strict trust boundary.
 
-This project targets the most common RAG failure mode: **unauthorized retrieval** (admin leakage or cross-tenant leakage). The key idea is simple:
+This project targets the most common RAG failure mode: **unauthorized retrieval** (admin leakage or cross-tenant leakage). The core idea is simple:
 
 > If unauthorized text ever enters retrieval/snippet generation, you can’t “unfetch” it.
 > So authorization must happen **before** retrieval and before any snippet is produced.
+
+---
+
+## Intended use (realistic)
+
+This gateway is designed to be the **single choke point** for retrieval in a product:
+
+* Teams building RAG features call **this gateway** for retrieval/snippets instead of querying the store directly.
+* The store (DynamoDB) is treated as **passive**; all access control happens in the gateway.
+
+### Concrete scenario (what it prevents)
+
+* **Intern in Tenant A** tries to retrieve **Tenant A admin runbook** → **blocked** + deny receipt (`reason_code`, `request_id`).
+* **Intern in Tenant A** tries to retrieve **Tenant B roadmap** → **blocked** + deny receipt.
 
 ---
 
@@ -61,10 +77,19 @@ flowchart LR
 
 1. **Auth-Before-Retrieval:** permissions are applied to the retrieval scope (not filtered post-fetch).
 2. **Strict Tenant Isolation:** tenant is derived server-side; storage reads/writes are tenant-scoped.
-3. **No Admin Leakage:** non-admin roles must never retrieve admin-classified titles/snippets.
-4. **Safe Logging:** logs must never contain raw request bodies/queries/auth headers.
+3. **No Admin Leakage:** non-admin roles must never retrieve admin-classified titles/snippets/bodies.
+4. **Safe Logging:** logs must never contain raw request bodies/queries/auth headers/tokens.
 5. **Evidence-over-Claims:** denials are traceable via `request_id` and backed by numbered evidence artifacts.
 6. **No Secret Egress via Snippets:** snippet output is redacted to prevent leaking secrets even if they exist in stored docs.
+
+---
+
+## Retrieval model (intentional)
+
+Retrieval is **lexical** (simple keyword scoring) by design in v0.5.0:
+
+* The thesis of this project is the **security boundary** (auth-before-retrieval + tenant scoping + auditable denials), not embeddings.
+* Lexical retrieval keeps demos and gates deterministic while still exercising the same authorization, scoping, and snippet pathways a vector system would.
 
 ---
 
