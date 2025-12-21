@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-This project follows **Semantic Versioning** (`MAJOR.MINOR.PATCH`). Release dates are in **YYYY-MM-DD**.
+---
+
+## [v0.6.0] - 2025-12-20
+
+### Changed
+* **Architectural Alignment:** Terraform configuration now explicitly reflects the `InMemoryStore` usage (removed unused DynamoDB resource) to ensure infrastructure honesty.
+* **Makefile Standardization:** Renamed `smoke-dev` to `smoke-cloud` for clarity; added explicit `smoke-local` target.
+* **Entry Point:** Consolidated Lambda entry point into `app.main.handler`; removed redundant `app/lambda_handler.py`.
+
+### Added
+* **Credibility Signals:** Added `LICENSE` (MIT), `SECURITY.md`, and a CI Status Badge to `README.md`.
+* **Reviewer Path:** Added a "90-Second Review" guide to the README to streamline evaluation.
+* **CI Target:** Added explicit `make ci` target mapping to `fmt lint sec test gate`.
+
+### Removed
+* **Dead Code:** Removed unused `app/middleware.py` and `app/lambda_handler.py`.
+* **Unused Infra:** Removed `aws_dynamodb_table` from Terraform to align with the v0.6.0 reference architecture.
 
 ---
 

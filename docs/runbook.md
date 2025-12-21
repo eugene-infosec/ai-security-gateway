@@ -1,6 +1,6 @@
 # Operational Runbook (Dev)
 
-> Truth scope: accurate as of **v0.5.0**.
+> Truth scope: accurate as of **v0.6.0**.
 
 This runbook is optimized for **demos, verification, and safe teardown**. It assumes the gateway is the *only* supported path for retrieval in the demo environment.
 
@@ -72,16 +72,15 @@ make deploy-dev
 
 ### Smoke test
 
-* **JWT-mode (primary, production-shaped):**
-
+* **Cloud (JWT Mode - REAL):**
 ```bash
-make smoke-dev-jwt
+make smoke-cloud
 ```
 
-* **Header-mode (only if your repo explicitly supports it in cloud):**
+* **Local (Header-mode):**
 
 ```bash
-make smoke-dev
+make smoke-local
 ```
 
 ### Tail logs

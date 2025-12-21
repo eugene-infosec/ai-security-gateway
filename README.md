@@ -1,10 +1,23 @@
 # AI Security Gateway
 
-**Retrieval-Safety-as-Code:** a production-shaped multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
+[![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
 
-> **Status:** **v0.5.0** - JWT at the edge (Cognito + API Gateway authorizer), deny receipts, security gates, ops guardrails, and **snippet redaction**.
-> **Where it fits:** place this gateway between your app/LLM and your knowledge store; it becomes the single enforced path for retrieval + snippets in a multi-tenant system.
-> **Design principle:** security decisions are **metadata-based**, not prompt-based; they depend on `Principal` + tenant scope + classification, not on what a user asks.
+**Retrieval-Safety-as-Code:** a production-shaped demo multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
+
+> **Quick Review:**
+> * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md)
+> * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`
+
+## 🛡️ Engineering Standards (v0.6.0)
+
+This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
+
+| Standard | Implementation | Evidence |
+| :--- | :--- | :--- |
+| **Fail-Closed** | App refuses to start if `AUTH_MODE` is misconfigured. | [E09: Crash Proof](evidence/E09_fail_closed.png) |
+| **Observability** | Structured JSON logs for all security events. | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
+| **Automation** | CI pipeline runs linters, tests, and security gates. | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
+| **Zero Trust** | Identity derived strictly from JWT (Cognito), not headers. | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
 
 ---
 

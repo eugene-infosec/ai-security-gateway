@@ -1,6 +1,6 @@
 # Cost Analysis and Operational Guardrails
 
-> Truth scope: accurate as of **v0.5.0** (dev demo shape).
+> Truth scope: accurate as of **v0.6.0** (production-shaped).
 
 This repo is designed to be **cheap-by-default** (serverless, short log retention, fast teardown).
 

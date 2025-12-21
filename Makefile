@@ -1,4 +1,4 @@
-.PHONY: install doctor doctor-aws fmt lint sec test gate tf-check preflight clean package-lambda deploy-dev destroy-dev smoke-dev logs-cloud run-local ci
+.PHONY: install doctor doctor-aws fmt lint sec test gate tf-check preflight clean package-lambda deploy-dev destroy-dev smoke-cloud smoke-local ci run-local
 
 # ==============================================================================
 # 1. SETUP & CHECKS
@@ -38,7 +38,7 @@ sec:
 	@if [ -d "app" ]; then .venv/bin/bandit -q -r app; fi
 	.venv/bin/pip-audit
 
-# Standard CI Entrypoint for GitHub Actions
+# The Standard CI Entrypoint
 ci: fmt lint sec test gate
 	@echo "✅ CI Gates Passed"
 
@@ -47,13 +47,11 @@ ci: fmt lint sec test gate
 # ==============================================================================
 test:
 	@echo "🧪 Running Unit Tests..."
-	# We inject the "Insecure" config so tests can mock headers easily
 	AUTH_MODE=headers ALLOW_INSECURE_HEADERS=true TABLE_NAME="" \
 	PYTHONPATH=. .venv/bin/python3 -m pytest -q
 
 gate:
 	@echo "🔒 Running Security Gates..."
-	# Inject Insecure Mode so gates can run locally against InMemoryStore
 	AUTH_MODE=headers ALLOW_INSECURE_HEADERS=true TABLE_NAME="" \
 	PYTHONPATH=. .venv/bin/python3 evals/no_admin_leakage_gate.py
 
@@ -68,22 +66,28 @@ preflight: ci
 	@echo "🚀 READY FOR COMMIT."
 
 # ==============================================================================
-# 4. LOCAL DEVELOPMENT (The Fix)
+# 4. LOCAL DEVELOPMENT
 # ==============================================================================
 run-local:
 	@echo "⚠️  STARTING IN LOCAL/INSECURE MODE (Headers Allowed)"
-	@# This specific configuration allows your new main.py to start locally
 	export AUTH_MODE=headers; \
 	export ALLOW_INSECURE_HEADERS=true; \
 	export TABLE_NAME=""; \
 	.venv/bin/uvicorn app.main:app --reload --port 8000
+
+smoke-local:
+	@echo "🔥 Smoke Test (Local Headers)"
+	@curl -s http://127.0.0.1:8000/health | grep "ok" && echo "✅ /health passed"
+	@curl -s http://127.0.0.1:8000/whoami \
+		-H 'X-User: demo' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' | grep "user_id" \
+		&& echo "✅ /whoami passed"
 
 # ==============================================================================
 # 5. DEPLOYMENT & CLOUD
 # ==============================================================================
 package-lambda:
 	@echo "📦 Packaging Lambda -> dist/lambda.zip"
-	@which zip >/dev/null || (echo "❌ 'zip' missing (sudo apt-get install zip)" && exit 1)
+	@which zip >/dev/null || (echo "❌ 'zip' missing" && exit 1)
 	rm -rf dist/.build dist/lambda.zip
 	mkdir -p dist/.build
 	.venv/bin/python3 -m pip install -r requirements-runtime.txt -t dist/.build --upgrade
@@ -98,7 +102,7 @@ tf-check:
 	@if [ -f dist/lambda.zip ]; then \
 		terraform -chdir=infra/terraform validate ; \
 	else \
-		echo "⚠️ dist/lambda.zip missing (run: make package-lambda). Skipping terraform validate." ; \
+		echo "⚠️ dist/lambda.zip missing. Skipping validate." ; \
 	fi
 
 deploy-dev: package-lambda
@@ -115,18 +119,9 @@ logs-cloud:
 	aws logs tail /aws/lambda/ai-security-gateway-dev --follow --since 10m
 
 # ==============================================================================
-# 6. SMOKE TESTS
+# 6. CLOUD SMOKE TESTS (JWT)
 # ==============================================================================
-# Renamed to avoid confusion with the JWT cloud deployment
-smoke-dev-insecure:
-	@echo "☁️ Smoke test (HEADERS - OLD/INSECURE)"
-	$(eval API_URL := $(shell terraform -chdir=infra/terraform output -raw base_url))
-	@echo "Target: $(API_URL)"
-	@curl -s "$(API_URL)/health" | grep "ok" && echo "✅ /health passed"
-	@# This will fail on the new cloud deployment (401 expected)
-	@curl -s "$(API_URL)/whoami" -H "X-User: test" | grep "tenant" || echo "❌ /whoami failed (Expected if JWT is on)"
-
-smoke-dev:
+smoke-cloud:
 	@echo "☁️ Smoke Test (JWT Mode - REAL)"
 	@if [ -z "$$JWT_TOKEN" ]; then echo "❌ Set JWT_TOKEN first: source scripts/auth.sh"; exit 1; fi
 	$(eval API_URL := $(shell terraform -chdir=infra/terraform output -raw base_url))

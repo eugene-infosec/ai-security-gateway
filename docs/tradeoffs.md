@@ -1,6 +1,6 @@
 # Tradeoffs
 
-> Truth scope: accurate as of **v0.5.0**.
+> Truth scope: accurate as of **v0.6.0**.
 > Scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity—not maximum feature surface.
 
 This document captures “why” decisions so the system is believable, reviewable, and easy to defend in interviews.
@@ -34,14 +34,14 @@ This document captures “why” decisions so the system is believable, reviewab
   **Payoff:** simpler audits, stronger guarantees, and fewer catastrophic failure modes.
 
 ---
-
 ## Storage
 
-* **Local:** in-memory, tenant-scoped store for deterministic gates and fast iteration.
-* **Cloud dev:** DynamoDB for persistence and production-shaped behavior.
-
-**Tradeoff:** in-memory storage is not multi-instance correct and has no durability.
-**Why acceptable:** local mode is designed for proof and repeatability; the “realistic” path is the cloud slice.
+* **Decision:** In-Memory, tenant-scoped store for both Local and Cloud environments.
+* **Why:**
+  1. **Zero Cost:** No idle DynamoDB costs for the demo.
+  2. **Simplicity:** Removes IAM/Table provisioning complexity for reviewers running the demo.
+* **Tradeoff:** Data is lost when the Lambda cold starts or container restarts.
+* **Mitigation:** The architecture enforces scoping *logically* in the code (`app/store.py`), so the security invariant (Tenant Isolation) is proven regardless of the backing engine.
 
 ---
 

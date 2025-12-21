@@ -187,4 +187,4 @@ def query(payload: QueryRequest, request: Request):
 
 stage = os.environ.get("ENV", "dev")
 root_path = f"/{stage}" if stage else ""
-handler = Mangum(app, api_gateway_base_path=root_path)
+handler = Mangum(app, api_gateway_base_path="/dev")

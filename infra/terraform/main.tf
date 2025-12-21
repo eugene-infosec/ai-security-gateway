@@ -39,56 +39,14 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy" "lambda_dynamo" {
-  name = "DynamoDBAccess"
-  role = aws_iam_role.lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:DeleteItem"
-        ]
-        Resource = aws_dynamodb_table.docs.arn
-      }
-    ]
-  })
-}
-
-# --- Data Layer ---
-resource "aws_dynamodb_table" "docs" {
-  name         = "${local.name}-docs"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "pk"
-  range_key    = "sk"
-
-  attribute {
-    name = "pk"
-    type = "S"
-  }
-
-  attribute {
-    name = "sk"
-    type = "S"
-  }
-
-  tags = {
-    Name = "${local.name}-docs"
-  }
-}
-
 # --- Lambda ---
 resource "aws_lambda_function" "gateway" {
   function_name = local.name
   role          = aws_iam_role.lambda_role.arn
 
   runtime = "python3.12"
-  handler = "app.lambda_handler.handler"
+  # CHANGED: Points directly to main.py, consolidated entry point
+  handler = "app.main.handler"
 
   filename         = local.lambda_zip
   source_code_hash = filebase64sha256(local.lambda_zip)
@@ -98,9 +56,10 @@ resource "aws_lambda_function" "gateway" {
 
   environment {
     variables = {
-      LOG_LEVEL  = "INFO"
-      ENV        = var.stage
-      TABLE_NAME = aws_dynamodb_table.docs.name
+      LOG_LEVEL = "INFO"
+      ENV       = var.stage
+      # CHANGED: Explicitly empty to force InMemoryStore
+      TABLE_NAME = ""
       AUTH_MODE  = "jwt"
     }
   }
@@ -130,7 +89,7 @@ resource "aws_apigatewayv2_integration" "lambda" {
   payload_format_version = "2.0"
 }
 
-# --- Routes (Protected vs Public) ---
+# --- Routes ---
 
 # 1. Public Health Route (No Auth)
 resource "aws_apigatewayv2_route" "health" {
@@ -153,7 +112,7 @@ resource "aws_apigatewayv2_route" "proxy_jwt" {
   route_key          = "ANY /{proxy+}"
   target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id # References authorizer.tf
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
 }
 
 # --- Permissions & Alarms ---

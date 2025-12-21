@@ -14,3 +14,5 @@
 | E06 | `E06_jwt_whoami.png`               | **JWT mode** `/whoami`: principal derived from **verified JWT claims** (tenant/role not client-asserted)                       |
 | E07 | `E07_jwt_attack_receipt_cloud.png` | **JWT-authenticated** deny produces CloudWatch receipt with `reason_code` + `request_id` (correlatable audit evidence) |
 | E08 | `E08_redaction_proof.png`          | **Snippet output redaction**: secret/canary is replaced with `[REDACTED]` in returned snippet (no secret egress)        |
+| E09 | `E09_fail_closed.png`              | **Secure Defaults**: App crashes (500) if insecure headers are used without explicit dev flags.                                 |
+| E10 | `E10_ci_pipeline.png`              | **CI/CD Automation**: GitHub Actions pipeline enforces linters, tests, and security gates on every push.                       |

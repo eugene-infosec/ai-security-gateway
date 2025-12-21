@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.5.0**.
+> Truth scope: accurate as of **v0.6.0**.
 
 ## Goal
 
@@ -37,13 +37,19 @@ flowchart LR
   subgraph TC["Trusted Compute (Invariant Boundary)"]
     App -->|"1. Derive Principal"| Principal["Principal Resolver"]
     App -->|"2. Authorize Scope"| Policy["Policy Engine"]
-    App -->|"3. Tenant-Scoped Access"| Store[("Doc Store: DynamoDB / In-Memory (local)")]
+    App -->|"3. Tenant-Scoped Access"| Store[("Doc Store: In-Memory (Simulated)")]
     App -->|"4. Rank + Safe Snippet"| Search["Search + Snippet Engine"]
     App -->|"5. Deny Receipt + Audit"| Audit["Safe Logger / Audit"]
   end
 
   Audit --> Logs[("CloudWatch / Stdout")]
 ```
+
+## Data Layer (Simulated)
+
+**Status:** In-Memory (Non-Persistent)
+**Why:** To maintain a zero-cost, portable demo environment, this reference implementation uses a thread-local in-memory store
+**Production Path:** In a real deployment, the InMemoryStore class is swapped for a DynamoDBStore (infrastructure code provided in previous versions but disabled for this demo release).
 
 ---
 
