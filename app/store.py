@@ -1,66 +1,83 @@
-from __future__ import annotations
+import os
+import boto3
 
-from dataclasses import dataclass
-from threading import Lock
-from typing import List, Set
-import uuid
-
-
-@dataclass(frozen=True)
-class Document:
-    doc_id: str
-    tenant_id: str
-    classification: str  # "public" | "admin"
-    title: str
-    body: str
+# Removed unused imports (List, Optional)
+from app.models import Document  # Assuming you have a Document model
 
 
 class InMemoryStore:
-    def __init__(self) -> None:
-        self._lock = Lock()
-        self._docs: list[Document] = []
+    def __init__(self):
+        self.db = {}  # {doc_id: Document}
 
-    def clear(self) -> None:
-        """Reset store for deterministic testing."""
-        with self._lock:
-            self._docs = []
+    def put(self, tenant_id, classification, title, body):
+        import uuid
 
-    def put(
-        self, *, tenant_id: str, classification: str, title: str, body: str
-    ) -> Document:
+        doc_id = str(uuid.uuid4())
         doc = Document(
-            doc_id=str(uuid.uuid4()),
+            doc_id=doc_id,
             tenant_id=tenant_id,
             classification=classification,
             title=title,
             body=body,
         )
-        with self._lock:
-            self._docs.append(doc)
+        self.db[doc_id] = doc
         return doc
 
-    def list_scoped(
-        self, *, tenant_id: str, allowed_classifications: Set[str]
-    ) -> List[Document]:
-        """
-        Structural Isolation:
-        We never return other-tenant docs from this function.
-        We never return forbidden classifications.
-        """
-        with self._lock:
-            return [
-                d
-                for d in self._docs
-                if d.tenant_id == tenant_id
-                and d.classification in allowed_classifications
-            ]
+    def list_scoped(self, tenant_id, allowed_classifications):
+        return [
+            d
+            for d in self.db.values()
+            if d.tenant_id == tenant_id and d.classification in allowed_classifications
+        ]
 
-    def get(self, tenant_id: str, doc_id: str) -> Document | None:
-        with self._lock:
-            for d in self._docs:
-                if d.tenant_id == tenant_id and d.doc_id == doc_id:
-                    return d
-        return None
+    # --- ADD THIS METHOD ---
+    def clear(self):
+        self.db = {}
 
 
-STORE = InMemoryStore()
+class DynamoDBStore:
+    def __init__(self, table_name):
+        self.table = boto3.resource("dynamodb").Table(table_name)
+
+    def put(self, tenant_id, classification, title, body):
+        import uuid
+
+        doc_id = str(uuid.uuid4())
+        # PK = TENANT#<tenant_id>
+        # SK = CLASS#<classification>#DOC#<doc_id>
+        # This allows efficient querying by scope
+        item = {
+            "pk": f"TENANT#{tenant_id}",
+            "sk": f"CLASS#{classification}#DOC#{doc_id}",
+            "doc_id": doc_id,
+            "tenant_id": tenant_id,
+            "classification": classification,
+            "title": title,
+            "body": body,
+        }
+        self.table.put_item(Item=item)
+        return Document(**item)
+
+    def list_scoped(self, tenant_id, allowed_classifications):
+        results = []
+        for cls in allowed_classifications:
+            # Efficient Query: Get everything for this Tenant + Classification
+            resp = self.table.query(
+                KeyConditionExpression="pk = :pk AND begins_with(sk, :sk)",
+                ExpressionAttributeValues={
+                    ":pk": f"TENANT#{tenant_id}",
+                    ":sk": f"CLASS#{cls}",
+                },
+            )
+            for item in resp.get("Items", []):
+                results.append(Document(**item))
+        return results
+
+
+# Factory Logic
+TABLE_NAME = os.environ.get("TABLE_NAME")
+
+if TABLE_NAME:
+    STORE = DynamoDBStore(TABLE_NAME)
+else:
+    STORE = InMemoryStore()

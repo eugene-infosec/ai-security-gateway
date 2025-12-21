@@ -1,10 +1,17 @@
 from __future__ import annotations
-
 from typing import Literal
 from pydantic import BaseModel, Field
 from typing import List
 
 Classification = Literal["public", "admin"]
+
+
+class Document(BaseModel):
+    doc_id: str
+    tenant_id: str
+    classification: str
+    title: str
+    body: str
 
 
 class IngestRequest(BaseModel):

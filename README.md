@@ -187,6 +187,24 @@ For the full walkthrough: `docs/demo.md`.
 
 ---
 
+## 🧠 Key Architectural Decisions
+
+I prioritized **security invariants** over flexibility. Here are the specific trade-offs made for this architecture:
+
+### 1. Deterministic Lexical Search vs. Vector Search
+* **Decision:** We use exact lexical matching (keyword/metadata) rather than vector embeddings for the security boundary.
+* **Why:** Vector search is probabilistic; a security gate must be deterministic. We cannot risk an "89% semantic match" allowing a leak. The security layer enforces *scope*, leaving the semantic relevance to the underlying LLM application.
+
+### 2. Regex-Based Redaction vs. NLP Named Entity Recognition
+* **Decision:** Secrets (API keys, PII) are scrubbed using high-performance Regex patterns, not an ML model.
+* **Why:** Latency and predictability. Running a secondary NLP model for redaction adds significant latency to the critical retrieval path and introduces non-deterministic failure modes.
+
+### 3. Serverless Compute (AWS Lambda)
+* **Decision:** The gateway runs on Lambda rather than containers (ECS/K8s).
+* **Why:** Cost and isolation. The "scale-to-zero" cost model fits the intermittent nature of RAG retrieval calls. Furthermore, Lambda provides strong process isolation per request, minimizing the blast radius of a potential tenant context leak.
+
+---
+
 ## 💰 Cost safety (dev)
 
 Designed to be cheap-by-default:

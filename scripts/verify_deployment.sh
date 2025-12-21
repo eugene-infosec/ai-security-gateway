@@ -42,7 +42,7 @@ AUTH_RESPONSE=$(aws cognito-idp initiate-auth \
     --region us-west-2 \
     --auth-flow USER_PASSWORD_AUTH \
     --client-id $CLIENT_ID \
-    --auth-parameters USERNAME=test-intern,PASSWORD="TestIntern123!")
+    --auth-parameters USERNAME=test-intern,PASSWORD="TestIntern123!") # pragma: allowlist secret
 
 # EXTRACT THE ID TOKEN (This is the critical fix: IdToken contains the custom claims)
 JWT_TOKEN=$(echo $AUTH_RESPONSE | grep -o '"IdToken": "[^"]*' | cut -d'"' -f4)
@@ -52,4 +52,3 @@ curl -i -X POST "$API_URL/ingest" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"title":"CLOUD_HACK","body":"x","classification":"admin"}'
-

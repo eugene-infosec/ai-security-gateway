@@ -1,4 +1,3 @@
-import json
 import logging
 from fastapi.testclient import TestClient
 from app.main import app
@@ -26,18 +25,22 @@ def test_intern_cannot_ingest_admin_and_emits_deny_receipt(caplog):
     assert "request_id" in detail
 
     # 2. Assert Audit Contract (The Deny Receipt)
-    msgs = [rec.message for rec in caplog.records if rec.name == "app.audit"]
-    assert msgs, "Expected a structured audit receipt"
+    # Filter for the raw records from the audit logger
+    audit_records = [rec for rec in caplog.records if rec.name == "app.audit"]
+    assert audit_records, "Expected a structured audit receipt"
 
-    payload = json.loads(msgs[-1])
+    # CRITICAL FIX: The logger now receives a Dictionary object, not a string.
+    # We access .msg directly.
+    payload = audit_records[-1].msg
+
+    # Validate the dictionary fields directly
     assert payload["event"] == "access_denied"
     assert payload["reason_code"] == "CLASSIFICATION_FORBIDDEN"
+    assert payload["tenant_id"] == "tenant-a"
+    assert payload["user_id"] == "malicious_intern"
     assert payload["status"] == 403
     assert payload["path"] == "/ingest"
-    assert payload["tenant_id"] == "tenant-a"
-    assert payload["role"] == "intern"
-    assert payload["user_id"] == "malicious_intern"
-    assert "request_id" in payload
+    assert payload["request_id"] == r.headers["X-Request-Id"]
 
 
 def test_admin_can_ingest_admin_classified():

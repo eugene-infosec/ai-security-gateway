@@ -1,43 +1,77 @@
 import os
 import uuid
+import logging  # <--- ADDED THIS
 from fastapi import FastAPI, Request, HTTPException
 from mangum import Mangum
+from app.json_logger import setup_logging
 
-from app.models import (
+# Configure logging BEFORE other app imports to capture everything
+setup_logging()
+
+# noqa: E402 tells the linter to ignore "imports not at top" for these lines
+from app.models import (  # noqa: E402
     IngestRequest,
     IngestResponse,
     QueryRequest,
     QueryResponse,
     QueryResult,
 )
-from app.store import STORE
-from app.security.audit import audit, sha256_hex
-from app.security.policy import authorize_ingest
-from app.security.jwt_claims import get_jwt_claims_from_asgi_scope
-from app.security.redact import redact_text
-from app.security.principal import (
+from app.store import STORE  # noqa: E402
+from app.security.audit import audit, sha256_hex  # noqa: E402
+from app.security.policy import authorize_ingest  # noqa: E402
+from app.security.jwt_claims import get_jwt_claims_from_asgi_scope  # noqa: E402
+from app.security.redact import redact_text  # noqa: E402
+from app.security.principal import (  # noqa: E402
     resolve_principal_from_headers,
     resolve_principal_from_jwt_claims,
 )
 
+# Initialize the logger for this file
+logger = logging.getLogger(__name__)  # <--- ADDED THIS
+
 app = FastAPI(title="AI Security Gateway")
 
-AUTH_MODE = os.environ.get("AUTH_MODE", "headers")  # headers | jwt
+
+# If AUTH_MODE is not explicitly set, we crash. No guessing.
+AUTH_MODE = os.environ.get("AUTH_MODE", "").lower()
+
+if AUTH_MODE not in ("jwt", "headers"):
+    # Allow headers ONLY if explicitly flagged (e.g. for local dev)
+    # This prevents accidental deployment of header-auth to prod.
+    if os.environ.get("ALLOW_INSECURE_HEADERS") == "true":
+        AUTH_MODE = "headers"
+    else:
+        # We use a logger warning here, but practically we want to fail startup
+        # or fail the first request.
+        logger.critical(
+            "SECURITY_MISCONFIGURATION: AUTH_MODE not set to 'jwt' and insecure headers not explicitly allowed."
+        )
+        # In Lambda, we can't easily "crash" the init process without cold start loops,
+        # so we will enforce this in the resolve_principal function.
 
 
 def resolve_principal(request: Request):
+    # 2. ENFORCE CONFIGURATION
     if AUTH_MODE == "jwt":
         claims = get_jwt_claims_from_asgi_scope(request.scope)
         if not claims:
-            raise HTTPException(
-                status_code=401, detail="Missing/invalid JWT (no claims)"
-            )
-        try:
-            return resolve_principal_from_jwt_claims(claims)
-        except ValueError as e:
-            raise HTTPException(status_code=401, detail=str(e)) from e
+            raise HTTPException(status_code=401, detail="Missing/invalid JWT")
+        return resolve_principal_from_jwt_claims(claims)
 
-    return resolve_principal_from_headers(request.headers)
+    elif AUTH_MODE == "headers":
+        # Double check the explicit allow flag (defense in depth)
+        if os.environ.get("ALLOW_INSECURE_HEADERS") != "true":
+            raise HTTPException(
+                status_code=500,
+                detail="Server Misconfiguration: Insecure headers blocked",
+            )
+        return resolve_principal_from_headers(request.headers)
+
+    else:
+        # Fallback for undefined state
+        raise HTTPException(
+            status_code=500, detail="Server Authentication Misconfigured"
+        )
 
 
 # ... (Middleware & Health Check remain same) ...
