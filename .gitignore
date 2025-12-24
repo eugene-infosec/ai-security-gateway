@@ -15,6 +15,7 @@ htmlcov/
 .ipynb_checkpoints/
 .venv/
 venv/
+ENV/
 
 # ---- Environment / secrets (never commit) ----
 .env
@@ -33,10 +34,10 @@ id_ed25519
 id_ed25519.pub
 
 # ---- Terraform (never commit state or local plans) ----
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfplan
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
 crash.log
 crash.*.log
 override.tf
@@ -47,11 +48,10 @@ override.tf.json
 *.tfvars.json
 
 # IMPORTANT: DO commit provider lockfile
-!.terraform.lock.hcl
+!**/.terraform.lock.hcl
 
 # ---- AWS / Serverless build artifacts ----
 lambda_function.zip
-*.zip
 .aws-sam/
 .serverless/
 

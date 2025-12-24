@@ -1,6 +1,6 @@
 # ADR 0001: Authorization Before Retrieval
 
-> Truth scope: accurate as of **v0.6.0**.
+> Truth scope: accurate as of **v0.7.0**.
 
 ## Context
 

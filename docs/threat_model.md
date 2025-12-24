@@ -1,6 +1,6 @@
 # Threat Model
 
-> Truth scope: accurate as of **v0.6.0**.
+> Truth scope: accurate as of **v0.7.0**.
 
 This document focuses on the project’s core security goal: **prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable evidence** when the gateway blocks an action.
 
@@ -95,7 +95,7 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ---
 
-## 4) Residual risks and next steps (explicitly out-of-scope for v0.5.0)
+## 4) Residual risks and next steps (explicitly out-of-scope for v0.7.0)
 
 * Stronger key management (AWS Secrets Manager / SSM Parameter Store for sensitive config)
 * WAF + more nuanced rate limiting (per principal / per tenant)

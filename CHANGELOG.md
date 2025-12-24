@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.7.0] - 2025-12-24
+
+### Changed
+* **Repo Hygiene:** Hardened `.gitignore` & removed local artifacts/state (venvs, dist artifacts, Terraform state) from accidental tracking.
+* **Security Correctness:** Snippet generation now redacts full text before slicing (boundary-safe), with a regression test.
+* **Observability:** Request correlation now safely honors upstream `X-Request-Id` and injects `request_id` into all JSON logs.
+* **CI Alignment:** CI runs `make gate` which is fresh-machine friendly (bootstraps venv + runs full security gates).
+
+### Added
+* **Supply chain automation & check:** Dependabot configuration for weekly pip dependency update PRs; `pip-audit` included in gate.
+* **Portability:** Minimal Dockerfile + `make docker-build` / `make docker-run` for running the local demo without installing Python tooling.
+* **Documentation:** `docs/retrospective_v0.7.0.md` (issues found, why they matter, fixes shipped, tradeoffs acknowledged).
+
+---
+
 ## [v0.6.0] - 2025-12-20
 
 ### Changed

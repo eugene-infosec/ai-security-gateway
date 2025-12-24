@@ -2,35 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
 
 jobs:
-  security-gate:
-    name: Security Gates & Tests
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: 'pip'
 
-      - name: Create .venv and Install Dependencies
-        # This matches exactly what your Makefile expects
+      - name: Gates (lint + tests + security)
         run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -r requirements-dev.txt
-          .venv/bin/pip install -r requirements-runtime.txt
-
-      - name: Run Security Gates (Make CI)
-        run: make ci
+          make gate

@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.6.0**.
+> Truth scope: accurate as of **v0.7.0**.
 
 ## Goal
 
@@ -92,7 +92,7 @@ flowchart LR
 
 ## Retrieval model (intentional)
 
-Retrieval is **lexical** (simple keyword scoring) by design in v0.5.0:
+Retrieval is **lexical** (simple keyword scoring) by design by design (demo-scoped):
 
 * The thesis of this project is the **security boundary** (auth-before-retrieval + tenant scoping + auditable denials), not embeddings.
 * Lexical retrieval keeps demos and gates deterministic while still exercising the same authorization, scoping, and snippet pathways a vector system would.
