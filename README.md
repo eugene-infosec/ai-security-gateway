@@ -2,13 +2,18 @@
 
 [![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
 
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20Cognito-orange)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-purple)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 **Retrieval-Safety-as-Code:** a production-shaped demo multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
 
 > **Quick Review:**
 > * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md)
 > * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`
 
-## 🛡️ Engineering Standards (v0.6.0)
+## 🛡️ Engineering Standards (v0.7.0)
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 
@@ -22,6 +27,31 @@ This project enforces security invariants through **infrastructure-as-code** and
 ---
 
 ## What this is
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client (Intern)
+    participant GW as API Gateway (JWT)
+    participant App as Security Gateway (Lambda)
+    participant DB as Document Store
+
+    Note over User, App: 🛑 ATTEMPT: Intern requests Admin Runbook
+
+    User->>GW: POST /retrieve (JWT: role=intern)
+    GW->>App: Invoke (Validated Claims)
+
+    rect rgb(60, 20, 20)
+        Note right of App: 🛡️ SECURITY BOUNDARY
+        App->>App: Derive Principal
+        App->>App: Evaluate Policy (Intern != Admin)
+        App->>App: ❌ BLOCK (Fail-Closed)
+    end
+
+    Note over App, DB: 🔒 The DB is NEVER queried
+
+    App-->>User: 403 Forbidden + Deny Receipt
+```
 
 ## 🎬 See it in action (80s)
 
@@ -94,6 +124,17 @@ These invariants are enforced by code and continuously checked by `make gate`:
 make ci
 # or: make gate
 ```
+
+### Docker (optional reviewer shortcut)
+
+If you prefer zero Python tooling on your machine & Docker installed:
+
+```bash
+make docker-build
+make docker-run
+curl -i http://127.0.0.1:8000/health -H 'X-Request-Id: demo-123'
+```
+If Docker is not installed, skip this — make run-local covers the full local demo.
 
 ### 2) Trigger a deny receipt (local)
 

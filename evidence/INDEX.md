@@ -1,5 +1,5 @@
 # Evidence Artifact Index
-> Truth scope: accurate as of **v0.5.0**.
+> Truth scope: accurate as of **v0.7.0**.
 >
 > All artifacts are referenced by ID to ensure traceability.
 

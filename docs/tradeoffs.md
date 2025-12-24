@@ -1,6 +1,6 @@
 # Tradeoffs
 
-> Truth scope: accurate as of **v0.6.0**.
+> Truth scope: accurate as of **v0.7.0**.
 > Scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity—not maximum feature surface.
 
 This document captures “why” decisions so the system is believable, reviewable, and easy to defend in interviews.
@@ -71,4 +71,4 @@ This document captures “why” decisions so the system is believable, reviewab
 * **Why:** snippet output is an egress channel; even authorized retrieval can unintentionally expose operational secrets.
 
 **Tradeoff:** regex redaction can have false positives and false negatives.
-**Why acceptable:** it’s a pragmatic safety net for v0.5.0 and a clear seam for future DLP-style controls (better detectors, allowlists, tenant-specific policies).
+**Why acceptable:** it’s a pragmatic safety net for v0.7.0 and a clear seam for future DLP-style controls (better detectors, allowlists, tenant-specific policies).
