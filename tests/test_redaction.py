@@ -32,3 +32,33 @@ def test_snippet_redaction_enforcement():
     # 3. Verify: The secret is GONE.
     assert prefix not in snippet
     assert "[REDACTED]" in snippet
+
+
+def test_redaction_happens_before_snippet_slicing():
+    """Regression: a secret crossing the 160-char snippet boundary must still be redacted."""
+    # Build an AWS-like access key without embedding it as a single literal.
+    key = ("AK" + "IA") + ("1" * 16)  # AKIA + 16 chars
+
+    # Place it so the first 160 chars would include 'AKIA' but not the full pattern.
+    body = ("x" * 156) + key + " tail"
+
+    # Ingest as admin (tenant-scoped)
+    r = client.post(
+        "/ingest",
+        headers={"X-User": "admin", "X-Tenant": "tenant-redact", "X-Role": "admin"},
+        json={"title": "t", "body": body, "classification": "public"},
+    )
+    assert r.status_code == 200
+
+    # Query as intern: snippet must not leak the secret prefix
+    q = client.post(
+        "/query",
+        headers={"X-User": "intern", "X-Tenant": "tenant-redact", "X-Role": "intern"},
+        json={"query": "tail"},
+    )
+    assert q.status_code == 200
+    results = q.json()["results"]
+    assert results, "Expected at least one result"
+
+    snippet = results[0]["snippet"]
+    assert "AKIA" not in snippet

@@ -14,6 +14,14 @@ def test_health_has_ok_and_request_id():
     assert r.headers.get("X-Request-Id") == body["request_id"]
 
 
+def test_health_honors_safe_upstream_request_id():
+    r = client.get("/health", headers={"X-Request-Id": "demo-123"})
+    assert r.status_code == 200
+    body = r.json()
+    assert r.headers.get("X-Request-Id") == "demo-123"
+    assert body["request_id"] == "demo-123"
+
+
 def test_whoami_header_identity_flow():
     """Prove we can read identity headers (Critical for Phase 2)."""
     headers = {"X-User": "u1", "X-Tenant": "t1", "X-Role": "intern"}
