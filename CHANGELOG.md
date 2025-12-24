@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [v0.7.0] - 2025-12-24
 
 ### Changed
-* **Repo Hygiene:** Hardened `.gitignore` and removed local artifacts/state (venvs, dist artifacts, Terraform state) from accidental tracking.
+* **Repo Hygiene:** Hardened `.gitignore` & removed local artifacts/state (venvs, dist artifacts, Terraform state) from accidental tracking.
 * **Security Correctness:** Snippet generation now redacts full text before slicing (boundary-safe), with a regression test.
 * **Observability:** Request correlation now safely honors upstream `X-Request-Id` and injects `request_id` into all JSON logs.
 * **CI Alignment:** CI runs `make gate` which is fresh-machine friendly (bootstraps venv + runs full security gates).

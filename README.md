@@ -17,12 +17,12 @@
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 
-| Standard | Implementation | Evidence |
-| :--- | :--- | :--- |
-| **Fail-Closed** | App refuses to start if `AUTH_MODE` is misconfigured. | [E09: Crash Proof](evidence/E09_fail_closed.png) |
-| **Observability** | Structured JSON logs for all security events. | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
-| **Automation** | CI pipeline runs linters, tests, and security gates. | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
-| **Zero Trust** | Identity derived strictly from JWT (Cognito), not headers. | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
+| Standard          | Implementation                                             | Evidence                                         |
+| :---              | :---                                                       | :---                                             |
+| **Fail-Closed**   | App refuses to start if `AUTH_MODE` is misconfigured.      | [E09: Crash Proof](evidence/E09_fail_closed.png) |
+| **Observability** | Structured JSON logs for all security events.              | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
+| **Automation**    | CI pipeline runs linters, tests, and security gates.       | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
+| **Zero Trust**    | Identity derived strictly from JWT (Cognito), not headers. | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
 
 ---
 
@@ -127,14 +127,14 @@ make ci
 
 ### Docker (optional reviewer shortcut)
 
-If you prefer zero Python tooling on your machine & Docker installed:
+If you prefer zero Python tooling on your machine & have Docker installed:
 
 ```bash
 make docker-build
 make docker-run
 curl -i http://127.0.0.1:8000/health -H 'X-Request-Id: demo-123'
 ```
-If Docker is not installed, skip this — make run-local covers the full local demo.
+If Docker is not installed, skip this - `make run-local` covers the full local demo.
 
 ### 2) Trigger a deny receipt (local)
 
