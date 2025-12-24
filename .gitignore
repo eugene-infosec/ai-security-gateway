@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *.so
 *.egg-info/
+build/
+dist/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -11,8 +13,6 @@ __pycache__/
 htmlcov/
 .cache/
 .ipynb_checkpoints/
-
-# Virtual environments
 .venv/
 venv/
 ENV/
@@ -47,17 +47,11 @@ override.tf.json
 *.tfvars
 *.tfvars.json
 
-# DO commit provider lockfile
-!.terraform.lock.hcl
+# IMPORTANT: DO commit provider lockfile
+!**/.terraform.lock.hcl
 
-# ---- Build artifacts ----
-build/
-dist/
-
-# If you want to keep dist/lambda.zip OUT of git (recommended for repo hygiene):
-dist/lambda.zip
-
-# ---- AWS / Serverless tooling ----
+# ---- AWS / Serverless build artifacts ----
+lambda_function.zip
 .aws-sam/
 .serverless/
 
