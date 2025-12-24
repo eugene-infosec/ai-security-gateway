@@ -10,19 +10,20 @@
 **Retrieval-Safety-as-Code:** a production-shaped demo multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
 
 > **Quick Review:**
-> * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md)
-> * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`
+> * **30 Seconds:** Run `make review` → Guided summary of build status & gates.
+> * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md).
+> * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`.
 
-## 🛡️ Engineering Standards (v0.7.0)
+## 🛡️ Engineering Standards (v0.8.0)
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 
-| Standard          | Implementation                                             | Evidence                                         |
-| :---              | :---                                                       | :---                                             |
-| **Fail-Closed**   | App refuses to start if `AUTH_MODE` is misconfigured.      | [E09: Crash Proof](evidence/E09_fail_closed.png) |
-| **Observability** | Structured JSON logs for all security events.              | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
-| **Automation**    | CI pipeline runs linters, tests, and security gates.       | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
-| **Zero Trust**    | Identity derived strictly from JWT (Cognito), not headers. | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
+| Standard          | Implementation                                                             | Evidence                                         |
+| :---              | :---                                                                       | :---                                             |
+| **Fail-Closed** | App refuses to start if `AUTH_MODE` is misconfigured.                      | [E09: Crash Proof](evidence/E09_fail_closed.png) |
+| **Observability** | Structured JSON logs for all security events.                              | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
+| **Automation** | CI pipeline runs linters, tests, and security gates.                       | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
+| **Zero Trust** | Identity derived strictly from JWT (Cognito), not headers.                 | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
 
 ---
 
@@ -51,6 +52,7 @@ sequenceDiagram
     Note over App, DB: 🔒 The DB is NEVER queried
 
     App-->>User: 403 Forbidden + Deny Receipt
+
 ```
 
 ## 🎬 See it in action (80s)
@@ -72,9 +74,10 @@ In RAG, the common critical leak is not “the LLM,” it’s **retrieval fetchi
 ### Concrete scenario (what it blocks)
 
 * An **intern in Tenant A** tries to retrieve:
+* an **admin-classified runbook**, or
+* **Tenant B’s roadmap**
 
-  * an **admin-classified runbook**, or
-  * **Tenant B’s roadmap**
+
 * Result: **blocked (403)** + **deny receipt** with `request_id` + `reason_code` (auditable, screenshot-safe).
 
 ### Why lexical search (intentional)
@@ -88,19 +91,15 @@ Retrieval is currently **deterministic lexical scoring** on purpose: the thesis 
 These invariants are enforced by code and continuously checked by `make gate`:
 
 1. **No Admin Leakage**
-   Non-admin roles must never retrieve admin-classified content (titles/snippets/bodies).
-
+Non-admin roles must never retrieve admin-classified content (titles/snippets/bodies).
 2. **Strict Tenant Isolation**
-   Tenant A must never retrieve Tenant B data (structural scoping in storage keys + server-side authority).
-
+Tenant A must never retrieve Tenant B data (structural scoping in storage keys + server-side authority).
 3. **Safe Logging**
-   Logs must never contain raw request bodies/queries/auth headers/tokens.
-
+Logs must never contain raw request bodies/queries/auth headers/tokens.
 4. **Evidence-over-Claims**
-   Every denial is traceable via `request_id` and backed by numbered evidence artifacts.
-
+Every denial is traceable via `request_id` and backed by numbered evidence artifacts.
 5. **No Secret Egress via Snippets**
-   Snippet output is redacted to prevent accidental secret leakage.
+Snippet output is redacted to prevent accidental secret leakage.
 
 ---
 
@@ -123,6 +122,7 @@ These invariants are enforced by code and continuously checked by `make gate`:
 ```bash
 make ci
 # or: make gate
+
 ```
 
 ### Docker (optional reviewer shortcut)
@@ -132,8 +132,10 @@ If you prefer zero Python tooling on your machine & have Docker installed:
 ```bash
 make docker-build
 make docker-run
-curl -i http://127.0.0.1:8000/health -H 'X-Request-Id: demo-123'
+curl -i [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health) -H 'X-Request-Id: demo-123'
+
 ```
+
 If Docker is not installed, skip this - `make run-local` covers the full local demo.
 
 ### 2) Trigger a deny receipt (local)
@@ -142,10 +144,11 @@ If Docker is not installed, skip this - `make run-local` covers the full local d
 make run-local
 
 # In another terminal:
-curl -i -X POST http://127.0.0.1:8000/ingest \
+curl -i -X POST [http://127.0.0.1:8000/ingest](http://127.0.0.1:8000/ingest) \
   -H 'Content-Type: application/json' \
   -H 'X-User: malicious_intern' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
   -d '{"title":"HACK","body":"x","classification":"admin"}'
+
 ```
 
 Result: HTTP 403 and a structured audit log in stdout (deny receipt).
@@ -154,13 +157,13 @@ Result: HTTP 403 and a structured audit log in stdout (deny receipt).
 
 All claims are backed by screenshots in `evidence/INDEX.md` (highlights below).
 
-| ID      | Proof Artifact                 | Claim                                 |
-| ------- | ------------------------------ | ------------------------------------- |
-| **E01** | `E01_attack_receipt_local.png` | Local deny receipt with `request_id`  |
-| **E02** | `E02_gate_pass_local.png`      | Security gates passing locally        |
-| **E04** | `E04_attack_receipt_cloud.png` | AWS CloudWatch deny receipt           |
-| **E06** | `E06_jwt_whoami.png`           | JWT identity verification (`/whoami`) |
-| **E08** | `E08_redaction_proof.png`      | Snippet redaction (secret scrubbing)  |
+| ID | Proof Artifact | Claim |
+| --- | --- | --- |
+| **E01** | `E01_attack_receipt_local.png` | Local deny receipt with `request_id` |
+| **E02** | `E02_gate_pass_local.png` | Security gates passing locally |
+| **E04** | `E04_attack_receipt_cloud.png` | AWS CloudWatch deny receipt |
+| **E06** | `E06_jwt_whoami.png` | JWT identity verification (`/whoami`) |
+| **E08** | `E08_redaction_proof.png` | Snippet redaction (secret scrubbing) |
 
 ---
 
@@ -185,14 +188,16 @@ python3 -m venv .venv && source .venv/bin/activate
 make install
 make doctor
 make run-local
+
 ```
 
 Verify liveness + identity:
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1:8000/whoami \
+curl -s [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+curl -s [http://127.0.0.1:8000/whoami](http://127.0.0.1:8000/whoami) \
   -H 'X-User: demo' -H 'X-Tenant: tenant-a' -H 'X-Role: intern'
+
 ```
 
 ---
@@ -208,10 +213,11 @@ make deploy-dev
 scripts/cognito_bootstrap_user.sh test-intern tenant-a intern
 source scripts/auth.sh
 
-make smoke-dev-jwt
+make smoke-cloud
 make logs-cloud
 
 make destroy-dev
+
 ```
 
 > In the cloud, `/health` is public. All other routes require a valid JWT via the API Gateway authorizer.
@@ -246,16 +252,24 @@ For the full walkthrough: `docs/demo.md`.
 I prioritized **security invariants** over flexibility. Here are the specific trade-offs made for this architecture:
 
 ### 1. Deterministic Lexical Search vs. Vector Search
+
 * **Decision:** We use exact lexical matching (keyword/metadata) rather than vector embeddings for the security boundary.
 * **Why:** Vector search is probabilistic; a security gate must be deterministic. We cannot risk an "89% semantic match" allowing a leak. The security layer enforces *scope*, leaving the semantic relevance to the underlying LLM application.
 
 ### 2. Regex-Based Redaction vs. NLP Named Entity Recognition
+
 * **Decision:** Secrets (API keys, PII) are scrubbed using high-performance Regex patterns, not an ML model.
 * **Why:** Latency and predictability. Running a secondary NLP model for redaction adds significant latency to the critical retrieval path and introduces non-deterministic failure modes.
 
 ### 3. Serverless Compute (AWS Lambda)
+
 * **Decision:** The gateway runs on Lambda rather than containers (ECS/K8s).
 * **Why:** Cost and isolation. The "scale-to-zero" cost model fits the intermittent nature of RAG retrieval calls. Furthermore, Lambda provides strong process isolation per request, minimizing the blast radius of a potential tenant context leak.
+
+### 4. In-Memory Store (Demo) vs. Database
+
+* **Decision:** The demo uses a strict `InMemoryStore` instead of connecting to a real database (DynamoDB/Pinecone).
+* **Why:** Reproducibility and Reviewer Experience. A "production-shaped" demo must work on the reviewer's machine in seconds. Docker containers and cloud credentials introduce friction. The security logic (`list_scoped`) is identical regardless of the backing store.
 
 ---
 

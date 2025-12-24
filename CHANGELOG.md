@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.8.0] - 2025-12-24
+
+### Security Hardening (Golden Build)
+* **Identity Boundary:** Enforced immutability on Cognito `tenant_id` and `role` attributes (`mutable = false`) and removed write permissions from the client to prevent privilege escalation.
+* **Safe Logging:** Implemented a global `SafeLogFilter` in `app/json_logger.py` to intercept and block sensitive keys (cookies, auth headers) from `stdout`, ensuring no leakage occurs even outside the audit subsystem.
+* **Zero CVEs:** Removed vulnerable `python-jose` dependency and `starlette` (via `fastapi`) to resolve known high-severity vulnerabilities.
+
+### Infrastructure & Operations
+* **Reviewer Experience:** Added `make review` target to provide a guided summary of build status, security gates, and validation steps.
+* **Reproducibility:** Fixed and standardized cloud workflow scripts (`scripts/package_lambda.py`, `scripts/smoke_cloud_jwt.py`), ensuring the cloud dev slice is fully deployable and testable.
+* **Cleanup:** Removed dead `DynamoDBStore` implementation to align the codebase with the documented "In-Memory" tradeoff and reduce attack surface.
+
+---
+
 ## [v0.7.0] - 2025-12-24
 
 ### Changed

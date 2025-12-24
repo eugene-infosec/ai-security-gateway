@@ -1,6 +1,6 @@
 # Threat Model
 
-> Truth scope: accurate as of **v0.7.0**.
+> Truth scope: accurate as of **v0.8.0**.
 
 This document focuses on the project’s core security goal: **prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable evidence** when the gateway blocks an action.
 
@@ -28,12 +28,21 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ## 3) Threats, mitigations, and proof
 
+### T0: Identity Attribute Tampering (Privilege Escalation)
+
+**Threat:** A malicious user attempts to overwrite their own `role` or `tenant_id` attributes in the Identity Provider (Cognito) to gain admin privileges or access another tenant's data.
+**Mitigation:**
+* **Immutability:** Cognito custom attributes (`tenant_id`, `role`) are enforced as `mutable = false` in Terraform.
+* **Write Protection:** The App Client's `write_attributes` configuration explicitly excludes security attributes; clients can only update standard profile fields (e.g., `email`).
+  **Proof:** `infra/terraform/cognito.tf` configuration.
+
+---
+
 ### T1: Cross-tenant data leakage (BOLA)
 
 **Threat:** Tenant A attempts to retrieve Tenant B content (intentionally or via bug).
 **Mitigation:**
-
-* Tenant is derived **server-side** (local headers for deterministic demos; JWT claims in cloud).
+* Tenant is derived **server-side** (local headers for deterministic demos; verified JWT claims in cloud).
 * All storage reads/writes are **tenant-scoped by construction** (no global scans in the store API).
   **Proof:** `evals/tenant_isolation_gate.py`
 
@@ -43,7 +52,6 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 **Threat:** Non-admin roles retrieve admin-classified titles/snippets/bodies.
 **Mitigation:**
-
 * Role/classification authorization is enforced **before retrieval** and **before snippet generation**.
 * Classification constraints are applied to retrieval scope (not “filter after fetch”).
   **Proof:** `evals/no_admin_leakage_gate.py`
@@ -54,9 +62,8 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 **Threat:** Request bodies, query text, auth headers/tokens, or secrets leak into logs (accidentally or via debug code).
 **Mitigation:**
-
-* Structured JSON logs with a strict **safe-logging allowlist**.
-* Explicit exclusion of request bodies, queries, and auth material.
+* **Global Safety Filter:** A `SafeLogFilter` is attached to the root logger to intercept and reject any log record containing forbidden keys (e.g., `body`, `Authorization`) or values (tokens).
+* Structured JSON logs with a strict schema.
   **Proof:** `evals/safe_logging_gate.py`
 
 ---
@@ -65,7 +72,6 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 **Threat:** Even when access is authorized, snippet output could accidentally leak secret-shaped strings (e.g., API keys) present in stored docs.
 **Mitigation:**
-
 * Regex-based snippet redaction on `/query` output to scrub secret-shaped patterns before egress.
   **Proof:** evidence artifact `E08_redaction_proof.png`
 
@@ -75,7 +81,6 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 **Threat:** Traffic spikes (malicious or accidental) degrade availability or inflate cost.
 **Mitigation:**
-
 * API Gateway throttling at the edge.
 * CloudWatch alarms for 5xx, throttles, and high denials.
 * Fast teardown “kill switch” for dev: `make destroy-dev`.
@@ -83,22 +88,19 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ---
 
-### T6: Misconfiguration drift (cloud)
+### T6: Supply Chain & Misconfiguration
 
-**Threat:** Manual changes or configuration drift weaken invariants, observability, or cost controls.
+**Threat:** Vulnerable dependencies or configuration drift weaken invariants.
 **Mitigation:**
-
-* Terraform-managed infrastructure.
-* Repeatable Make targets for deploy/smoke/destroy.
-* Terraform formatting/validation as part of workflow/CI (where configured).
-  **Proof:** reproducible `make deploy-dev` / `make smoke-dev-jwt` lifecycle + IaC in `infra/terraform/`
+* **Dependency Scanning:** `pip-audit` runs in the CI/Gate to block known CVEs (e.g., `python-jose`, `starlette`).
+* **IaC:** Terraform-managed infrastructure ensures Identity Provider settings (T0) are version-controlled and reproducible.
+  **Proof:** `make gate` (includes `pip-audit`), `infra/terraform/`
 
 ---
 
-## 4) Residual risks and next steps (explicitly out-of-scope for v0.7.0)
+## 4) Residual risks and next steps (explicitly out-of-scope for v0.8.0)
 
-* Stronger key management (AWS Secrets Manager / SSM Parameter Store for sensitive config)
 * WAF + more nuanced rate limiting (per principal / per tenant)
 * Per-tenant CMK / per-item envelope encryption (compliance-driven)
 * Distributed tracing + SLIs/SLOs (beyond CloudWatch alarms and logs)
-* More comprehensive DLP (beyond regex redaction; e.g., classification-aware policies, allowlists, or external scanners)
+* More comprehensive DLP (beyond regex redaction; e.g., classification-aware policies or external scanners)

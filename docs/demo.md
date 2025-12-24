@@ -1,6 +1,6 @@
 # Demo Script (2–12 minutes)
 
-> Truth scope: accurate as of **v0.7.0**.
+> Truth scope: accurate as of **v0.8.0**.
 
 ## Concrete use case (realistic)
 
@@ -25,7 +25,6 @@ Most RAG leaks aren’t “the LLM.” They’re retrieval pulling the wrong ten
 * Tradeoffs: `docs/tradeoffs.md`
 * Evidence index: `evidence/INDEX.md`
 * Executable proof:
-
   * `make gate` (security invariants)
   * `make ci` (tests + gates)
 
@@ -36,8 +35,9 @@ Most RAG leaks aren’t “the LLM.” They’re retrieval pulling the wrong ten
 ### ✅ 2-3 minutes (fast)
 
 1. Show the problem in one sentence + the fix (“gateway must be called for retrieval”)
-2. Run `make gate` (proof harness)
-3. Trigger a deny receipt locally (403) and point to `request_id` + `reason_code`
+2. Run `make review` (guided build summary & status)
+3. Run `make gate` (proof harness)
+4. Trigger a deny receipt locally (403) and point to `request_id` + `reason_code`
 
 ### ✅ 6-8 minutes (full)
 
@@ -52,7 +52,7 @@ Full demo +:
 
 * explain “gates are misuse regression tests” (they block regressions in CI)
 * explain safe logging contract (no body/query/auth in logs)
-* cloud JWT smoke test (`make smoke-dev-jwt`) + CloudWatch deny receipt
+* cloud JWT smoke test (`make smoke-cloud`) + CloudWatch deny receipt
 
 ---
 
@@ -68,6 +68,7 @@ Full demo +:
 
 ```bash
 make gate
+
 ```
 
 **Expected:** `PASS` lines for:
@@ -82,14 +83,16 @@ make gate
 
 ```bash
 make run-local
+
 ```
 
 ## 3) Show identity + request correlation
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1:8000/whoami \
+curl -s [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+curl -s [http://127.0.0.1:8000/whoami](http://127.0.0.1:8000/whoami) \
   -H 'X-User: demo' -H 'X-Tenant: tenant-a' -H 'X-Role: intern'
+
 ```
 
 **Point out:**
@@ -102,20 +105,22 @@ curl -s http://127.0.0.1:8000/whoami \
 This is the “you can screenshot this safely” moment.
 
 ```bash
-curl -i -X POST http://127.0.0.1:8000/ingest \
+curl -i -X POST [http://127.0.0.1:8000/ingest](http://127.0.0.1:8000/ingest) \
   -H 'Content-Type: application/json' \
   -H 'X-User: malicious_intern' -H 'X-Tenant: tenant-a' -H 'X-Role: intern' \
   -d '{"title":"HACK","body":"x","classification":"admin"}'
+
 ```
 
 **Expected:**
 
 * HTTP `403`
 * structured audit log emitted with:
+* `event="access_denied"`
+* `reason_code="CLASSIFICATION_FORBIDDEN"` (example)
+* `request_id="..."`
 
-  * `event="access_denied"`
-  * `reason_code="CLASSIFICATION_FORBIDDEN"` (example)
-  * `request_id="..."`
+
 
 **Reference:** `evidence/INDEX.md` (E01)
 
@@ -145,6 +150,7 @@ Show the redacted output (live or via screenshot).
 ```bash
 make doctor-aws
 make deploy-dev
+
 ```
 
 ## 2) Create a test user + fetch JWT
@@ -152,13 +158,15 @@ make deploy-dev
 ```bash
 scripts/cognito_bootstrap_user.sh test-intern tenant-a intern
 source scripts/auth.sh
+
 ```
 
 ## 3) JWT smoke test (principal + deny receipt)
 
 ```bash
-make smoke-dev-jwt
+make smoke-cloud
 make logs-cloud
+
 ```
 
 **Expected:**

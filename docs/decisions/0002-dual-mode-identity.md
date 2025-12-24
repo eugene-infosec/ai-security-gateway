@@ -1,6 +1,6 @@
 # ADR 0002: Dual-Mode Identity (Local vs. Cloud)
 
-> Truth scope: accurate as of **v0.7.0**.
+> Truth scope: accurate as of **v0.8.0**.
 
 ## Context
 
@@ -18,7 +18,6 @@ Implement a **dual-mode Principal Resolver** behind a strict invariant boundary.
 ### Mode A - Local: `AUTH_MODE=headers`
 
 * Identity is derived from explicit request headers:
-
   * `X-User`
   * `X-Tenant`
   * `X-Role`
@@ -45,7 +44,6 @@ After `Principal` derivation, the rest of the system (policy, scoping, retrieval
 ### Tradeoffs / Risks
 
 * Two identity paths exist; mitigated by:
-
   * a single `Principal` model,
   * shared policy code paths after derivation,
   * tests covering both modes (including JWT principal mapping).

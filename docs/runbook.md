@@ -1,6 +1,6 @@
 # Operational Runbook (Dev)
 
-> Truth scope: accurate as of **v0.7.0**.
+> Truth scope: accurate as of **v0.8.0**.
 
 This runbook is optimized for **demos, verification, and safe teardown**. It assumes the gateway is the *only* supported path for retrieval in the demo environment.
 
@@ -21,12 +21,14 @@ This runbook is optimized for **demos, verification, and safe teardown**. It ass
 ```bash
 make install
 make doctor
+
 ```
 
 ### Run the API
 
 ```bash
 make run-local
+
 ```
 
 ### Quick checks
@@ -34,9 +36,10 @@ make run-local
 Liveness + principal derivation:
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1:8000/whoami \
+curl -s [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+curl -s [http://127.0.0.1:8000/whoami](http://127.0.0.1:8000/whoami) \
   -H 'X-User: demo' -H 'X-Tenant: tenant-a' -H 'X-Role: intern'
+
 ```
 
 ### Verification (tests + invariants)
@@ -46,12 +49,14 @@ make ci
 # or:
 make test
 make gate
+
 ```
 
 ### Required before commit
 
 ```bash
-make preflight
+make review
+
 ```
 
 ---
@@ -62,37 +67,44 @@ make preflight
 
 ```bash
 make doctor-aws
+
 ```
 
 ### Deploy
 
 ```bash
 make deploy-dev
+
 ```
 
 ### Smoke test
 
 * **Cloud (JWT Mode - REAL):**
+
 ```bash
 make smoke-cloud
+
 ```
 
 * **Local (Header-mode):**
 
 ```bash
 make smoke-local
+
 ```
 
 ### Tail logs
 
 ```bash
 make logs-cloud
+
 ```
 
 ### Teardown (cost safety / “kill switch”)
 
 ```bash
 make destroy-dev
+
 ```
 
 ---
@@ -102,17 +114,19 @@ make destroy-dev
 ### Logs
 
 * **Destination**
+* Local: stdout
+* Cloud: CloudWatch Logs (Lambda)
 
-  * Local: stdout
-  * Cloud: CloudWatch Logs (Lambda)
+
 * **Retention**
+* 7 days (Terraform)
 
-  * 7 days (Terraform)
+
 * **Logging policy**
+* Structured JSON
+* **SafeLogFilter:** Enforced globally. **Never** log request bodies, query text, auth headers, or tokens.
+* Use `request_id` for correlation.
 
-  * Structured JSON
-  * **Never** log request bodies, query text, auth headers, or tokens
-  * Use `request_id` for correlation
 
 ### Alarms (Dev)
 
@@ -125,52 +139,52 @@ make destroy-dev
 ## 4) What to do when an alarm fires
 
 1. **Check recent changes**
-
 * Last commit/tag deployed (did anything just change?)
 
+
 2. **Inspect CloudWatch logs**
-
 * Filter for:
+* `event="access_denied"` (security)
+* 5xx stack traces (availability)
 
-  * `event="access_denied"` (security)
-  * 5xx stack traces (availability)
+
 * Use `request_id` to correlate a request → decision → outcome.
 
-3. **If it’s a regression**
 
+3. **If it’s a regression**
 * Redeploy a known-good tag/commit.
 * Re-run:
-
 ```bash
-make smoke-dev-jwt
+make smoke-cloud
+
 ```
 
 4. **If it’s load/abuse**
-
 * Confirm throttling metrics/alarm.
 * Reduce traffic / verify caller behavior.
 * Keep the system safe; the demo priority is correctness + evidence.
 
 ---
 
-## 5) Emergency procedures (“Break Glass”)
+## 5) Emergency procedures / State Reset
 
-If Cognito / API Gateway is unavailable, **do not add an application backdoor endpoint**.
+### Demo Environment (v0.8.0)
 
-Use AWS IAM access to the data layer directly (DynamoDB), relying on **CloudTrail** for audit.
+Since **v0.8.0** uses **ephemeral in-memory storage** to ensure reproducibility and zero cost, there is no persistent database to patch manually.
 
-### Example: force-delete a corrupted document
-
-> Illustrative: the exact keys depend on your schema.
+**To clear corrupted state:**
 
 ```bash
-aws dynamodb delete-item \
-  --table-name ai-security-gateway-dev-docs \
-  --key '{"pk": {"S": "TENANT#A"}, "sk": {"S": "DOC#123"}}'
+# Force a full infrastructure cycle
+make destroy-dev
+make deploy-dev
+
 ```
 
-### Guardrails
+### Production Scenario (Reference)
 
-* Use a dedicated admin role (MFA preferred).
-* Document **why** and **what** was done (ticket/notes).
-* Prefer the smallest possible change (single item operations over scans/exports).
+In a real deployment using the `DynamoDBStore` backend:
+
+1. Use a dedicated admin IAM role (MFA preferred).
+2. Access the table directly via AWS CLI or Console.
+3. **CloudTrail** provides the audit trail for these manual interventions.

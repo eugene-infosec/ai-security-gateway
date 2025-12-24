@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.7.0**.
+> Truth scope: accurate as of **v0.8.0**.
 
 ## Goal
 
@@ -18,7 +18,7 @@ This project targets the most common RAG failure mode: **unauthorized retrieval*
 This gateway is designed to be the **single choke point** for retrieval in a product:
 
 * Teams building RAG features call **this gateway** for retrieval/snippets instead of querying the store directly.
-* The store (DynamoDB) is treated as **passive**; all access control happens in the gateway.
+* The document store is treated as **passive**; all access control happens in the gateway.
 
 ### Concrete scenario (what it prevents)
 
@@ -43,13 +43,14 @@ flowchart LR
   end
 
   Audit --> Logs[("CloudWatch / Stdout")]
+
 ```
 
 ## Data Layer (Simulated)
 
-**Status:** In-Memory (Non-Persistent)
-**Why:** To maintain a zero-cost, portable demo environment, this reference implementation uses a thread-local in-memory store
-**Production Path:** In a real deployment, the InMemoryStore class is swapped for a DynamoDBStore (infrastructure code provided in previous versions but disabled for this demo release).
+* **Status:** In-Memory (Non-Persistent).
+* **Why:** To maintain a zero-cost, portable, and reproducible demo environment, this reference implementation uses a thread-local in-memory store.
+* **Production Path:** In a real deployment, the `InMemoryStore` class is swapped for a persistent vector or document store (e.g., DynamoDB, Pinecone, pgvector). The `list_scoped` interface allows the security logic to remain identical regardless of the backing storage.
 
 ---
 
@@ -92,7 +93,7 @@ flowchart LR
 
 ## Retrieval model (intentional)
 
-Retrieval is **lexical** (simple keyword scoring) by design by design (demo-scoped):
+Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 
 * The thesis of this project is the **security boundary** (auth-before-retrieval + tenant scoping + auditable denials), not embeddings.
 * Lexical retrieval keeps demos and gates deterministic while still exercising the same authorization, scoping, and snippet pathways a vector system would.
@@ -106,9 +107,9 @@ Retrieval is **lexical** (simple keyword scoring) by design by design (demo-scop
 * Identity is provided via headers: `X-User`, `X-Tenant`, `X-Role`.
 * Middleware assigns a `request_id` and returns `X-Request-Id`.
 * Authorization is evaluated before sensitive actions:
+* before ingestion writes
+* before query retrieval/snippet generation
 
-  * before ingestion writes
-  * before query retrieval/snippet generation
 * Storage access is tenant-scoped (structural isolation).
 * Logging is structured JSON (“deny receipts”).
 
@@ -128,10 +129,9 @@ Provisioned via Terraform:
 ## Proof hooks
 
 * `make gate` runs:
-
-  * `no_admin_leakage_gate`
-  * `tenant_isolation_gate`
-  * `safe_logging_gate`
+* `no_admin_leakage_gate`
+* `tenant_isolation_gate`
+* `safe_logging_gate`
 
 Evidence is indexed in `evidence/INDEX.md`.
 
