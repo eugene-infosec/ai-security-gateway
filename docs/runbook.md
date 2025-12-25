@@ -1,6 +1,6 @@
 # Operational Runbook (Dev)
 
-> Truth scope: accurate as of **v0.8.0**.
+> Truth scope: accurate as of **v0.9.0**.
 
 This runbook is optimized for **demos, verification, and safe teardown**. It assumes the gateway is the *only* supported path for retrieval in the demo environment.
 
@@ -72,6 +72,8 @@ make doctor-aws
 
 ### Deploy
 
+**Note:** This command now automatically builds the Lambda artifact (using the native wheel vendor script) before deploying. Docker is not required.
+
 ```bash
 make deploy-dev
 
@@ -128,6 +130,7 @@ make destroy-dev
 * Use `request_id` for correlation.
 
 
+
 ### Alarms (Dev)
 
 * **5xx errors** (availability)
@@ -159,18 +162,23 @@ make smoke-cloud
 
 ```
 
+
+
+
 4. **If it’s load/abuse**
 * Confirm throttling metrics/alarm.
 * Reduce traffic / verify caller behavior.
 * Keep the system safe; the demo priority is correctness + evidence.
 
+
+
 ---
 
 ## 5) Emergency procedures / State Reset
 
-### Demo Environment (v0.8.0)
+### Demo Environment (v0.9.0)
 
-Since **v0.8.0** uses **ephemeral in-memory storage** to ensure reproducibility and zero cost, there is no persistent database to patch manually.
+Since **v0.9.0** uses **ephemeral in-memory storage** to ensure reproducibility and zero cost, there is no persistent database to patch manually.
 
 **To clear corrupted state:**
 
@@ -183,8 +191,8 @@ make deploy-dev
 
 ### Production Scenario (Reference)
 
-In a real deployment using the `DynamoDBStore` backend:
+In a real deployment using a persistent store (e.g., DynamoDB or Vector DB):
 
 1. Use a dedicated admin IAM role (MFA preferred).
-2. Access the table directly via AWS CLI or Console.
+2. Access the store directly via AWS CLI or Console to repair records.
 3. **CloudTrail** provides the audit trail for these manual interventions.

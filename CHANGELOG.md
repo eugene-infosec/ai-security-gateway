@@ -4,12 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.9.0] - 2025-12-25
+
+### Infrastructure Hardening
+* **Reproducible Builds:** Rewrote `scripts/package_lambda.py` to vendor Linux x86_64 wheels for FastAPI, Mangum, and Pydantic. This ensures the Lambda artifact is deployable from any OS (Mac/Windows) without Docker.
+* **Terraform Stability:** Fixed a duplicate resource definition in `cognito.tf` and locked the Lambda architecture to `x86_64` to match the build artifacts.
+* **Reviewer Experience:** Updated `make deploy-dev` to automatically build the artifact before deploying, preventing "missing file" errors on fresh clones.
+
+### Documentation
+* **Consistency:** Aligned `Makefile` status checks and `CHANGELOG` claims regarding dependency management (clarified v0.8.0 security notes).
+
+---
+
 ## [v0.8.0] - 2025-12-24
 
-### Security Hardening (Golden Build)
+### Security Hardening
 * **Identity Boundary:** Enforced immutability on Cognito `tenant_id` and `role` attributes (`mutable = false`) and removed write permissions from the client to prevent privilege escalation.
 * **Safe Logging:** Implemented a global `SafeLogFilter` in `app/json_logger.py` to intercept and block sensitive keys (cookies, auth headers) from `stdout`, ensuring no leakage occurs even outside the audit subsystem.
-* **Zero CVEs:** Removed vulnerable `python-jose` dependency and `starlette` (via `fastapi`) to resolve known high-severity vulnerabilities.
+* **Zero CVEs:** Removed vulnerable `python-jose` dependency and pinned runtime deps (FastAPI/Starlette) to safe versions to resolve known high-severity vulnerabilities.
 
 ### Infrastructure & Operations
 * **Reviewer Experience:** Added `make review` target to provide a guided summary of build status, security gates, and validation steps.

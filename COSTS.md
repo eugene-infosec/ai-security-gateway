@@ -1,6 +1,6 @@
 # Cost Analysis and Operational Guardrails
 
-> Truth scope: accurate as of **v0.8.0** (production-shaped).
+> Truth scope: accurate as of **v0.9.0** (production-shaped).
 
 This repo is designed to be **cheap-by-default** (serverless, short log retention, fast teardown). The removal of persistent storage (DynamoDB) in favor of ephemeral in-memory state for the demo further ensures zero idle storage costs.
 

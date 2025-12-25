@@ -1,6 +1,6 @@
 # Threat Model
 
-> Truth scope: accurate as of **v0.8.0**.
+> Truth scope: accurate as of **v0.9.0**.
 
 This document focuses on the project’s core security goal: **prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable evidence** when the gateway blocks an action.
 
@@ -34,7 +34,7 @@ This document focuses on the project’s core security goal: **prevent unauthori
 **Mitigation:**
 * **Immutability:** Cognito custom attributes (`tenant_id`, `role`) are enforced as `mutable = false` in Terraform.
 * **Write Protection:** The App Client's `write_attributes` configuration explicitly excludes security attributes; clients can only update standard profile fields (e.g., `email`).
-  **Proof:** `infra/terraform/cognito.tf` configuration.
+  **Proof:** `infra/terraform/cognito.tf` configuration (strictly locked in v0.9.0).
 
 ---
 
@@ -88,17 +88,18 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ---
 
-### T6: Supply Chain & Misconfiguration
+### T6: Supply Chain, Deployment Integrity & Misconfiguration
 
-**Threat:** Vulnerable dependencies or configuration drift weaken invariants.
+**Threat:** Vulnerable dependencies, configuration drift, or incompatible binary artifacts weaken invariants or cause availability failures.
 **Mitigation:**
 * **Dependency Scanning:** `pip-audit` runs in the CI/Gate to block known CVEs (e.g., `python-jose`, `starlette`).
+* **Artifact Integrity:** Custom build script (`scripts/package_lambda.py`) enforces valid `manylinux2014_x86_64` wheels are vendored regardless of host OS, preventing binary corruption or host-pollution.
 * **IaC:** Terraform-managed infrastructure ensures Identity Provider settings (T0) are version-controlled and reproducible.
-  **Proof:** `make gate` (includes `pip-audit`), `infra/terraform/`
+  **Proof:** `make gate` (includes `pip-audit`), `scripts/package_lambda.py`
 
 ---
 
-## 4) Residual risks and next steps (explicitly out-of-scope for v0.8.0)
+## 4) Residual risks and next steps (explicitly out-of-scope for v0.9.0)
 
 * WAF + more nuanced rate limiting (per principal / per tenant)
 * Per-tenant CMK / per-item envelope encryption (compliance-driven)

@@ -1,6 +1,6 @@
 # Tradeoffs
 
-> Truth scope: accurate as of **v0.8.0**.
+> Truth scope: accurate as of **v0.9.0**.
 > Scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity—not maximum feature surface.
 
 This document captures “why” decisions so the system is believable, reviewable, and easy to defend in interviews.
@@ -71,4 +71,13 @@ This document captures “why” decisions so the system is believable, reviewab
 * **Why:** Snippet output is an egress channel; even authorized retrieval can unintentionally expose operational secrets present in valid documents.
 
 * **Tradeoff:** Regex redaction is imperfect (false positives/negatives).
-* **Why acceptable:** It is a pragmatic safety net for v0.8.0 and establishes a clear seam for future DLP-style controls (better detectors, allowlists, tenant-specific policies).
+* **Why acceptable:** It is a pragmatic safety net for v0.9.0 and establishes a clear seam for future DLP-style controls (better detectors, allowlists, tenant-specific policies).
+
+---
+
+## Decision 7 - Build Strategy: Native Wheel Vendoring vs. Docker
+
+* **Decision:** Use a custom Python script (`scripts/package_lambda.py`) to download and vendor `manylinux2014_x86_64` wheels instead of building inside Docker.
+* **Why:** Reviewer friction. Requiring Docker prevents many reviewers (especially on Mac/Windows) from easily deploying the cloud slice.
+* **Tradeoff:** We assume the complexity of managing a build script rather than the complexity of managing a container runtime.
+* **Mitigation:** We explicitly lock the Terraform Lambda architecture to `x86_64` to guarantee compatibility with the vendored wheels.

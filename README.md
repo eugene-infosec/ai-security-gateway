@@ -14,16 +14,17 @@
 > * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md).
 > * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`.
 
-## 🛡️ Engineering Standards (v0.8.0)
+## 🛡️ Engineering Standards (v0.9.0)
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 
-| Standard          | Implementation                                                             | Evidence                                         |
-| :---              | :---                                                                       | :---                                             |
-| **Fail-Closed** | App refuses to start if `AUTH_MODE` is misconfigured.                      | [E09: Crash Proof](evidence/E09_fail_closed.png) |
-| **Observability** | Structured JSON logs for all security events.                              | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
-| **Automation** | CI pipeline runs linters, tests, and security gates.                       | [E10: CI Pipeline](evidence/E10_ci_pipeline.png) |
-| **Zero Trust** | Identity derived strictly from JWT (Cognito), not headers.                 | [E06: JWT Identity](evidence/E06_jwt_whoami.png) |
+| Standard          | Implementation                                                             | Evidence                                                     |
+| :---              | :---                                                                       | :---                                                         |
+| **Fail-Closed** | App refuses to start if `AUTH_MODE` is misconfigured.                      | [E09: Crash Proof](evidence/E09_fail_closed.png)             |
+| **Observability** | Structured JSON logs for all security events.                              | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png)  |
+| **Automation** | CI pipeline runs linters, tests, and security gates.                       | [E10: CI Pipeline](evidence/E10_ci_pipeline.png)             |
+| **Zero Trust** | Identity derived strictly from JWT (Cognito), not headers.                 | [E06: JWT Identity](evidence/E06_jwt_whoami.png)             |
+| **Supply Chain** | `pip-audit` runs on every commit; builds use vendored hashes.              | [E02: Gates Pass](evidence/E02_gate_pass_local.png)          |
 
 ---
 
@@ -249,7 +250,7 @@ For the full walkthrough: `docs/demo.md`.
 
 ## 🧠 Key Architectural Decisions
 
-I prioritized **security invariants** over flexibility. Here are the specific trade-offs made for this architecture:
+I prioritized **security invariants** and **reviewer experience** over feature bloat.
 
 ### 1. Deterministic Lexical Search vs. Vector Search
 
@@ -266,10 +267,15 @@ I prioritized **security invariants** over flexibility. Here are the specific tr
 * **Decision:** The gateway runs on Lambda rather than containers (ECS/K8s).
 * **Why:** Cost and isolation. The "scale-to-zero" cost model fits the intermittent nature of RAG retrieval calls. Furthermore, Lambda provides strong process isolation per request, minimizing the blast radius of a potential tenant context leak.
 
-### 4. In-Memory Store (Demo) vs. Database
+### 4. Native Wheel Vendoring vs. Docker
+
+* **Decision:** We do not use Docker for builds. Instead, we use a custom script to vendor `manylinux2014_x86_64` wheels directly.
+* **Why:** Reviewer Friction. Requiring Docker prevents many reviewers (especially on Mac/Windows) from easily deploying the cloud slice. This approach allows a reviewer to deploy to AWS from a fresh laptop in seconds with zero system dependencies beyond Python.
+
+### 5. In-Memory Store (Demo) vs. Database
 
 * **Decision:** The demo uses a strict `InMemoryStore` instead of connecting to a real database (DynamoDB/Pinecone).
-* **Why:** Reproducibility and Reviewer Experience. A "production-shaped" demo must work on the reviewer's machine in seconds. Docker containers and cloud credentials introduce friction. The security logic (`list_scoped`) is identical regardless of the backing store.
+* **Why:** Reproducibility. A "production-shaped" demo must work on the reviewer's machine immediately. Cloud credentials and database setup introduce friction that distracts from the security logic.
 
 ---
 

@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.8.0**.
+> Truth scope: accurate as of **v0.9.0**.
 
 ## Goal
 
@@ -88,6 +88,7 @@ flowchart LR
 4. **Safe Logging:** logs must never contain raw request bodies/queries/auth headers/tokens.
 5. **Evidence-over-Claims:** denials are traceable via `request_id` and backed by numbered evidence artifacts.
 6. **No Secret Egress via Snippets:** snippet output is redacted to prevent leaking secrets even if they exist in stored docs.
+7. **Supply Chain Security:** runtime dependencies are audited for CVEs before every deployment.
 
 ---
 
@@ -110,6 +111,7 @@ Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 * before ingestion writes
 * before query retrieval/snippet generation
 
+
 * Storage access is tenant-scoped (structural isolation).
 * Logging is structured JSON (“deny receipts”).
 
@@ -117,7 +119,7 @@ Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 
 Provisioned via Terraform:
 
-* Lambda (Python 3.12)
+* Lambda (Python 3.12, **x86_64**)
 * API Gateway HTTP API
 * Cognito user pool + client for JWT issuance
 * CloudWatch log retention (7 days)
@@ -132,6 +134,9 @@ Provisioned via Terraform:
 * `no_admin_leakage_gate`
 * `tenant_isolation_gate`
 * `safe_logging_gate`
+* `pip-audit` (CVE scanning)
+
+
 
 Evidence is indexed in `evidence/INDEX.md`.
 

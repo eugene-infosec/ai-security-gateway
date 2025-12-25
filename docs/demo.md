@@ -1,6 +1,6 @@
 # Demo Script (2–12 minutes)
 
-> Truth scope: accurate as of **v0.8.0**.
+> Truth scope: accurate as of **v0.9.0**.
 
 ## Concrete use case (realistic)
 
@@ -25,7 +25,7 @@ Most RAG leaks aren’t “the LLM.” They’re retrieval pulling the wrong ten
 * Tradeoffs: `docs/tradeoffs.md`
 * Evidence index: `evidence/INDEX.md`
 * Executable proof:
-  * `make gate` (security invariants)
+  * `make gate` (security invariants + supply chain audit)
   * `make ci` (tests + gates)
 
 ---
@@ -76,6 +76,7 @@ make gate
 * no admin leakage
 * tenant isolation
 * safe logging
+* supply chain security (`pip-audit`)
 
 **What it proves:** security invariants are continuously enforced; regressions are blocked.
 
@@ -146,6 +147,8 @@ Show the redacted output (live or via screenshot).
 # Part 2 - Cloud dev (AWS + JWT)
 
 ## 1) Deploy
+
+**Note:** The new build system automatically handles packaging (no Docker required).
 
 ```bash
 make doctor-aws
