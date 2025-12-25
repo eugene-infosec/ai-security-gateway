@@ -10,50 +10,13 @@ resource "aws_cognito_user_pool" "pool" {
   }
 
   # Custom attributes -> appear as "custom:tenant_id" and "custom:role" in JWT claims
-  schema {
-    name                     = "tenant_id"
-    attribute_data_type      = "String"
-    developer_only_attribute = false
-    mutable                  = true
-    required                 = false
-    string_attribute_constraints {
-      min_length = 1
-      max_length = 64
-    }
-  }
-
-  schema {
-    name                     = "role"
-    attribute_data_type      = "String"
-    developer_only_attribute = false
-    mutable                  = true
-    required                 = false
-    string_attribute_constraints {
-      min_length = 1
-      max_length = 32
-    }
-  }
-}
-
-resource "aws_cognito_user_pool" "pool" {
-  name = "${local.name}-user-pool"
-
-  password_policy {
-    minimum_length    = 12
-    require_lowercase = true
-    require_uppercase = true
-    require_numbers   = true
-    require_symbols   = true
-  }
-
-  # Custom attributes -> appear as "custom:tenant_id" and "custom:role" in JWT claims
   # SECURITY FIX: attributes must be immutable to prevent privilege escalation
   schema {
-    name                     = "tenant_id"
-    attribute_data_type      = "String"
-    developer_only_attribute = false
-    mutable                  = false # <--- LOCKED
-    required                 = false
+    name                = "tenant_id"
+    attribute_data_type = "String"
+    # developer_only_attribute = false # Optional default
+    mutable             = false # <--- LOCKED
+    required            = false
     string_attribute_constraints {
       min_length = 1
       max_length = 64
@@ -61,11 +24,10 @@ resource "aws_cognito_user_pool" "pool" {
   }
 
   schema {
-    name                     = "role"
-    attribute_data_type      = "String"
-    developer_only_attribute = false
-    mutable                  = false # <--- LOCKED
-    required                 = false
+    name                = "role"
+    attribute_data_type = "String"
+    mutable             = false # <--- LOCKED
+    required            = false
     string_attribute_constraints {
       min_length = 1
       max_length = 32

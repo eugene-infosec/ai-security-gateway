@@ -54,6 +54,9 @@ resource "aws_lambda_function" "gateway" {
   memory_size = 128
   timeout     = 10
 
+  # FIX: Lock architecture to x86_64 to match the manylinux wheels in our zip
+  architectures = ["x86_64"]
+
   environment {
     variables = {
       LOG_LEVEL = "INFO"

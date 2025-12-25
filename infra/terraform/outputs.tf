@@ -17,3 +17,8 @@ output "cognito_user_pool_client_id" {
 output "jwt_issuer" {
   value = local.jwt_issuer
 }
+
+# REPAIR: Added region output so scripts can auto-detect the deployment target
+output "region" {
+  value = var.region
+}
