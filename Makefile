@@ -1,5 +1,5 @@
 # AI Security Gateway
-# v0.8.0
+# v0.9.0
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 SHELL := /bin/bash
@@ -31,7 +31,7 @@ review:
 	@echo "======================================================================"
 	@echo ""
 	@echo "✅  Build Status:      PASSING"
-	@echo "🔒  Vulnerabilities:   0 (Patched via python-jose 3.4.0)"
+	@echo "🔒  Vulnerabilities:   0 (pip-audit -r requirements-runtime.txt)"
 	@echo "🕵️  Security Gates:    ACTIVE (Tenant Isolation, Safe Logging, etc.)"
 	@echo "🏗️  Infrastructure:    Terraform + AWS Lambda (Ready)"
 	@echo ""
@@ -127,8 +127,9 @@ doctor-aws:
 	@echo "✅ AWS toolchain looks OK."
 
 # Terraform commands are routed through infra/terraform
-deploy-dev:
-	@cd infra/terraform && terraform init && terraform apply -auto-approve
+# FIX: Ensure artifacts exist (pack-lambda) and tools are present (doctor-aws) before deploying.
+deploy-dev: doctor-aws pack-lambda
+	@cd infra/terraform && terraform init -upgrade && terraform apply -auto-approve
 
 smoke-cloud:
 	@$(MAKE) smoke-cloud-jwt
@@ -140,7 +141,7 @@ logs-cloud:
 	@cd $(ROOT) && $(PY) scripts/logs_cloud.py
 
 destroy-dev:
-	@cd infra/terraform && terraform destroy -auto-approve
+	@cd infra/terraform && terraform init && terraform destroy -auto-approve
 
 # -----------------------------------------------------------------------------
 # Docker (reviewer empathy)
