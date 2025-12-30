@@ -1,6 +1,6 @@
 # Threat Model
 
-> Truth scope: accurate as of **v0.9.0**.
+> Truth scope: accurate as of **v0.9.1**.
 
 This document focuses on the project’s core security goal: **prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable evidence** when the gateway blocks an action.
 

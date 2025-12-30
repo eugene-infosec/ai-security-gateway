@@ -16,24 +16,40 @@ def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _validate_payload(payload: Any) -> None:
+    """
+    Recursively scans a payload (dict, list, or primitive) for forbidden keys or values.
+    Raises ValueError immediately if a violation is found.
+    """
+    # 1. Handle Dictionaries (Recursive)
+    if isinstance(payload, dict):
+        # Key Check (Shallow for this level)
+        if any(k in FORBIDDEN_KEYS for k in payload.keys()):
+            raise ValueError(
+                f"unsafe_log_detected: forbidden key in {list(payload.keys())}"
+            )
+        # Value Check (Recursive)
+        for v in payload.values():
+            _validate_payload(v)
+
+    # 2. Handle Lists (Recursive)
+    elif isinstance(payload, list):
+        for item in payload:
+            _validate_payload(item)
+
+    # 3. Handle Strings (Leaf nodes)
+    elif isinstance(payload, str):
+        for bad_word in FORBIDDEN_VALUES:
+            if bad_word in payload:
+                raise ValueError(f"unsafe_log_detected: forbidden value '{bad_word}'")
+
+
 def audit(event: str, **fields: Any) -> None:
     payload = {"event": event, **fields}
 
-    # Guardrail: Check dictionary directly before logging
-    # 1. Check for forbidden keys
-    if any(k in FORBIDDEN_KEYS for k in payload.keys()):
-        raise ValueError(
-            f"unsafe_log_detected: forbidden key in {list(payload.keys())}"
-        )
+    # Guardrail: Deep recursive check before logging
+    # This prevents secrets from hiding in nested JSON (e.g., metadata={"api_key": "..."})
+    _validate_payload(payload)
 
-    # 2. Check for forbidden substrings in string values
-    for v in payload.values():
-        if isinstance(v, str):
-            # FIX: Explicit loop to capture the specific bad word
-            for bad_word in FORBIDDEN_VALUES:
-                if bad_word in v:
-                    raise ValueError(f"unsafe_log_detected: forbidden value {bad_word}")
-
-    # Pass the Dict object directly.
     # The JsonFormatter will merge this into the top-level log JSON.
     logger.info(payload)

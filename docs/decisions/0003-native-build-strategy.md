@@ -1,6 +1,6 @@
 # ADR 0003: Native Cross-Platform Build Strategy (No Docker)
 
-> Truth scope: accurate as of **v0.9.0**.
+> Truth scope: accurate as of **v0.9.1**.
 
 ## Context
 

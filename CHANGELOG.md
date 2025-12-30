@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [v0.9.1] - 2025-12-30
+
+### Security Hardening
+* **Deep Log Validation:** Upgraded the audit subsystem to use **recursive** payload scanning. Previously, the `SafeLogFilter` performed a shallow check, which could theoretically allow secrets nested inside dictionaries or lists to bypass redaction. The new implementation enforces the "No Secrets in Logs" invariant across the entire JSON tree.
+
+---
 
 ## [v0.9.0] - 2025-12-25
 

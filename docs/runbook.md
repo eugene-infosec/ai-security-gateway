@@ -1,6 +1,6 @@
 # Operational Runbook (Dev)
 
-> Truth scope: accurate as of **v0.9.0**.
+> Truth scope: accurate as of **v0.9.1**.
 
 This runbook is optimized for **demos, verification, and safe teardown**. It assumes the gateway is the *only* supported path for retrieval in the demo environment.
 

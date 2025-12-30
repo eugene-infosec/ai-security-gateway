@@ -14,7 +14,7 @@
 > * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md).
 > * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`.
 
-## 🛡️ Engineering Standards (v0.9.0)
+## 🛡️ Engineering Standards (v0.9.1)
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 

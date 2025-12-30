@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.9.0**.
+> Truth scope: accurate as of **v0.9.1**.
 
 ## Goal
 

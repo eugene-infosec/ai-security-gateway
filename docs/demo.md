@@ -1,6 +1,6 @@
 # Demo Script (2–12 minutes)
 
-> Truth scope: accurate as of **v0.9.0**.
+> Truth scope: accurate as of **v0.9.1**.
 
 ## Concrete use case (realistic)
 
