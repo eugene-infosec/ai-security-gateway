@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## [v0.9.2] - 2026-01-09
+
+### Observability & Client Experience
+* **Reference Client:** Added `examples/reference-client/verify.py`, a standalone script that verifies the Gateway's security contract (Liveness, Identity, Fail-Closed Policy) against the running API.
+* **Trace Correlation:** Aliased `X-Request-Id` to `X-Trace-Id` in response headers to support standard client-side tracing and correlation.
+
+### Infrastructure & Operations
+* **Infrastructure-as-Code Validation:** Added `terraform fmt -check` and `terraform validate` to the CI pipeline (`.github/workflows/ci.yml`) to enforce IaC standards.
+* **Supply Chain Security:** Added GitHub CodeQL analysis workflow (`.github/workflows/codeql.yml`) for automated vulnerability scanning.
+* **Reviewer Integrity:** Updated `make review` to display verifiable instructions (e.g., "See CI Badge") rather than hardcoded "PASSING" status claims, preventing "trust-own" issues.
+
+### Documentation
+* **Verification Path:** Added "Verify in 90 Seconds" section to `README.md`, allowing reviewers to validate the system invariants immediately using the reference client.
+
+---
+
 ## [v0.9.1] - 2025-12-30
 
 ### Security Hardening

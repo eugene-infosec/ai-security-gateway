@@ -1,6 +1,6 @@
 # Tradeoffs
 
-> Truth scope: accurate as of **v0.9.1**.
+> Truth scope: accurate as of **v0.9.2**.
 
 > Demo scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity—not maximum feature surface.
 
@@ -62,7 +62,7 @@ This document captures “why” decisions so the system is believable, reviewab
 * **Why:** Accidental leakage into logs is a common real-world incident class, and logs are frequently exported broadly.
 
 * **Tradeoff:** Debugging is less convenient (cannot see the full payload).
-* **Mitigation:** Correlation via `request_id`, explicit deny receipts, and targeted CloudWatch alarms (5xx / throttles / high denials).
+* **Mitigation:** Correlation via `request_id` (aliased as `trace_id` for clients), explicit deny receipts, and targeted CloudWatch alarms (5xx / throttles / high denials).
 
 ---
 

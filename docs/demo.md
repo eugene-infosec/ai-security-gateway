@@ -1,6 +1,6 @@
 # Demo Script (2–12 minutes)
 
-> Truth scope: accurate as of **v0.9.1**.
+> Truth scope: accurate as of **v0.9.2**.
 
 ## Concrete use case (realistic)
 
@@ -37,7 +37,8 @@ Most RAG leaks aren’t “the LLM.” They’re retrieval pulling the wrong ten
 1. Show the problem in one sentence + the fix (“gateway must be called for retrieval”)
 2. Run `make review` (guided build summary & status)
 3. Run `make gate` (proof harness)
-4. Trigger a deny receipt locally (403) and point to `request_id` + `reason_code`
+4. **Run `python examples/reference-client/verify.py`** (verifies Liveness, Identity, Policy in <1s)
+5. Trigger a manual deny receipt locally (403)...
 
 ### ✅ 6-8 minutes (full)
 
@@ -98,7 +99,7 @@ curl -s [http://127.0.0.1:8000/whoami](http://127.0.0.1:8000/whoami) \
 
 **Point out:**
 
-* `request_id` exists for auditability (`X-Request-Id` / response field)
+* request_id exists for auditability (X-Request-Id, aliased as **X-Trace-Id** for standard clients)
 * identity is derived before sensitive operations run
 
 ## 4) Trigger a deny receipt (local)

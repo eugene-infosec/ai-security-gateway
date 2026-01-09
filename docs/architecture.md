@@ -1,6 +1,6 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.9.1**.
+> Truth scope: accurate as of **v0.9.2**.
 
 ## Goal
 
@@ -106,7 +106,7 @@ Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 ### Local request flow (deterministic)
 
 * Identity is provided via headers: `X-User`, `X-Tenant`, `X-Role`.
-* Middleware assigns a `request_id` and returns `X-Request-Id`.
+* Middleware assigns a `request_id` and returns `X-Request-Id` (aliased as **X-Trace-Id** for standard client correlation).
 * Authorization is evaluated before sensitive actions:
 * before ingestion writes
 * before query retrieval/snippet generation
@@ -126,6 +126,11 @@ Provisioned via Terraform:
 * CloudWatch alarms: 5xx errors, throttles, high denials
 * Metric filter counts deny receipts from structured logs
 
+---
+## Client Verification
+
+* **Reference Client:** A standalone script (`examples/reference-client/verify.py`) treats the Gateway as a black box.
+* **Role:** It validates the "Product Contract" (Service Liveness, Identity Resolution, Fail-Closed Policy) via real HTTP requests, ensuring the system behaves as documented for downstream consumers.
 ---
 
 ## Proof hooks

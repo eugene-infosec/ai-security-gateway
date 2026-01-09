@@ -1,6 +1,7 @@
 # AI Security Gateway
 
 [![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml)
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20Cognito-orange)
@@ -14,7 +15,35 @@
 > * **90 Seconds:** Run `make gate` → View [Evidence Index](evidence/INDEX.md).
 > * **5 Minutes:** `make run-local` → Trigger a deny receipt → Inspect `app/security/policy.py`.
 
-## 🛡️ Engineering Standards (v0.9.1)
+## ⚡ Verify in 90 Seconds
+You can verify the entire Security Gateway contract (Auth, Latency, Tracing) using the included reference client.
+
+1. **Start the Gateway:**
+   ```bash
+   make run-local
+   ```
+
+2. **Run the Compliance Check:**
+   ```bash
+   python examples/reference-client/verify.py
+   ```
+
+**Output:**
+
+🚀 Verifying Security Gateway Invariants...
+
+STATUS    | INVARIANT                 | LATENCY | TRACE_ID
+-----------------------------------------------------------------
+✅ PASS   | Service Liveness          |  10ms | 6f3f0...
+-
+✅ PASS   | Identity Resolution       |   2ms | 16ac8...
+-
+✅ PASS   | Policy Enforcement (403)  |   2ms | 8ae9d...
+-----------------------------------------------------------------
+
+✨ All Security Invariants Verified.
+
+## 🛡️ Engineering Standards (v0.9.2)
 
 This project enforces security invariants through **infrastructure-as-code** and **automated gates**.
 

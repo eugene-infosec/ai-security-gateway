@@ -1,6 +1,6 @@
 # Operational Runbook (Dev)
 
-> Truth scope: accurate as of **v0.9.1**.
+> Truth scope: accurate as of **v0.9.2**.
 
 This runbook is optimized for **demos, verification, and safe teardown**. It assumes the gateway is the *only* supported path for retrieval in the demo environment.
 
@@ -42,12 +42,20 @@ curl -s [http://127.0.0.1:8000/whoami](http://127.0.0.1:8000/whoami) \
 
 ```
 
-### Verification (tests + invariants)
+### Verification (Client & Invariants)
+
+**1. Client Contract (90-Second Verify):**
+
+```bash
+python examples/reference-client/verify.py
+
+```
+
+**2. Deep Security Gates:**
 
 ```bash
 make ci
 # or:
-make test
 make gate
 
 ```
@@ -127,8 +135,7 @@ make destroy-dev
 * **Logging policy**
 * Structured JSON
 * **SafeLogFilter:** Enforced globally. **Never** log request bodies, query text, auth headers, or tokens.
-* Use `request_id` for correlation.
-
+* Use `request_id` (aliased as **`trace_id`** or `X-Trace-Id`) for correlation.
 
 
 ### Alarms (Dev)
@@ -163,20 +170,16 @@ make smoke-cloud
 ```
 
 
-
-
 4. **If it’s load/abuse**
 * Confirm throttling metrics/alarm.
 * Reduce traffic / verify caller behavior.
 * Keep the system safe; the demo priority is correctness + evidence.
 
-
-
 ---
 
 ## 5) Emergency procedures / State Reset
 
-### Demo Environment (v0.9.0)
+### Demo Environment (v0.9.0+)
 
 Since **v0.9.0** uses **ephemeral in-memory storage** to ensure reproducibility and zero cost, there is no persistent database to patch manually.
 

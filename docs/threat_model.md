@@ -1,6 +1,6 @@
 # Threat Model
 
-> Truth scope: accurate as of **v0.9.1**.
+> Truth scope: accurate as of **v0.9.2**.
 
 This document focuses on the project’s core security goal: **prevent unauthorized retrieval** (cross-tenant leakage and role-based leakage) and provide **auditable evidence** when the gateway blocks an action.
 
@@ -99,7 +99,7 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ---
 
-## 4) Residual risks and next steps (explicitly out-of-scope for v0.9.0)
+## 4) Residual risks and next steps (explicitly out-of-scope for v0.9.2)
 
 * WAF + more nuanced rate limiting (per principal / per tenant)
 * Per-tenant CMK / per-item envelope encryption (compliance-driven)

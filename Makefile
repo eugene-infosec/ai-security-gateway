@@ -1,5 +1,5 @@
 # AI Security Gateway
-# v0.9.0
+# v0.9.2
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 SHELL := /bin/bash
@@ -30,8 +30,8 @@ review:
 	@echo "🛡️  AI SECURITY GATEWAY - REVIEWER SUMMARY"
 	@echo "======================================================================"
 	@echo ""
-	@echo "✅  Build Status:      PASSING"
-	@echo "🔒  Vulnerabilities:   0 (pip-audit -r requirements-runtime.txt)"
+	@echo "✅  Build Status:      See CI badge (or run 'make gate')"
+	@echo "🔒  Vulnerabilities:   Run 'make audit'"
 	@echo "🕵️  Security Gates:    ACTIVE (Tenant Isolation, Safe Logging, etc.)"
 	@echo "🏗️  Infrastructure:    Terraform + AWS Lambda (Ready)"
 	@echo ""

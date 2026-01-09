@@ -121,7 +121,13 @@ async def request_context(request: Request, call_next):
     try:
         response = await call_next(request)
         status_code = response.status_code
+
+        # ---------------------------------------------------------
+        # TRACE CORRELATION SIGNAL
+        # ---------------------------------------------------------
         response.headers["X-Request-Id"] = rid
+        response.headers["X-Trace-Id"] = rid  # <--- NEW: Alias for client correlation
+
         return response
     except Exception:
         status_code = 500
