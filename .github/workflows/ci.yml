@@ -7,10 +7,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -18,3 +16,23 @@ jobs:
       - name: Gates (lint + tests + security)
         run: |
           make gate
+
+  # SIGNAL: "I treat Infrastructure as Code like production software"
+  terraform-check:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+
+      - name: Terraform fmt
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        working-directory: infra/terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
