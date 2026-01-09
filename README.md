@@ -33,13 +33,16 @@ You can verify the entire Security Gateway contract (Auth, Latency, Tracing) usi
 🚀 Verifying Security Gateway Invariants...
 
 STATUS    | INVARIANT                 | LATENCY | TRACE_ID
------------------------------------------------------------------
+
+---
+
 ✅ PASS   | Service Liveness          |  10ms | 6f3f0...
--
+
 ✅ PASS   | Identity Resolution       |   2ms | 16ac8...
--
+
 ✅ PASS   | Policy Enforcement (403)  |   2ms | 8ae9d...
------------------------------------------------------------------
+
+---
 
 ✨ All Security Invariants Verified.
 
