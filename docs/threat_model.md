@@ -99,7 +99,35 @@ This document focuses on the project’s core security goal: **prevent unauthori
 
 ---
 
-## 4) Residual risks and next steps (explicitly out-of-scope for v0.9.2)
+## 4) Prevention of Bypass (Production Architecture)
+
+> **Note:** This section documents how a production deployment would prevent direct access to the data layer, bypassing the gateway. These controls are intentionally *not implemented* in this demo to reduce friction—but are called out here to demonstrate awareness.
+
+### Why This Matters
+
+The gateway enforces authorization, but only if traffic flows *through* it. In a naïve deployment, an attacker (or misconfigured service) could query the backing store directly, bypassing all policy enforcement.
+
+### Production Mitigations
+
+| Attack Vector | Mitigation | Implementation Notes |
+|---------------|------------|----------------------|
+| **Direct DB Access** | Private subnet isolation | Vector DB / DynamoDB placed in private subnets with no internet gateway. Only the Lambda security group has inbound access. |
+| **Stolen Lambda Credentials** | IAM least-privilege + VPC endpoints | Lambda role scoped to *only* the resources it needs. VPC endpoints for AWS services prevent credential exfiltration via NAT. |
+| **Rogue Internal Service** | Service mesh / mTLS | In a microservices environment, enforce mutual TLS between services; the data layer only accepts connections from the gateway's identity. |
+| **Misconfigured API Gateway** | API Gateway resource policies | Restrict invoke permissions to known IAM roles / VPC endpoints. Block public invocation of internal routes. |
+| **Log/Metric Exfiltration** | CloudWatch resource policies | Logs are encrypted (KMS CMK); cross-account access requires explicit policy. |
+
+### Why Not Implemented Here
+
+1. **Reviewer Friction:** Adding VPCs, NAT gateways, and private subnets significantly complicates `make deploy-dev` and increases AWS costs.
+2. **Orthogonal to Thesis:** The project's thesis is *auth-before-retrieval logic*, not network topology. The invariants are testable without the network layer.
+3. **Diminishing Demo Value:** A hiring manager can verify the security logic in 90 seconds. Verifying VPC connectivity requires AWS console access and adds no signal.
+
+> **TL;DR:** I know how to lock this down in production. I chose not to, deliberately, to keep the demo frictionless.
+
+---
+
+## 5) Residual risks and next steps (explicitly out-of-scope for v0.9.2)
 
 * WAF + more nuanced rate limiting (per principal / per tenant)
 * Per-tenant CMK / per-item envelope encryption (compliance-driven)

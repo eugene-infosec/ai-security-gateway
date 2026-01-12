@@ -11,3 +11,18 @@ ignore = []
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = "."
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]

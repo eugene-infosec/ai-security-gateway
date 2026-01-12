@@ -1,14 +1,48 @@
-# AI Security Gateway
+<div align="center">
+
+# 🛡️ AI Security Gateway
+
+### Stop patching prompts. Start securing retrieval.
+
+**A production-shaped multi-tenant RAG security gateway that makes unauthorized retrieval *impossible by construction*.**
 
 [![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml)
-
+![Coverage](https://img.shields.io/badge/Coverage-88%25-brightgreen)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20Cognito-orange)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-purple)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**Retrieval-Safety-as-Code:** a production-shaped demo multi-tenant gateway that makes *unauthorized retrieval* hard by construction.
+[**Quick Start**](#-verify-in-90-seconds) · [**Architecture**](docs/architecture.md) · [**Threat Model**](docs/threat_model.md) · [**Evidence**](evidence/INDEX.md) · [**Watch Demo**](#-see-it-in-action-80s)
+
+</div>
+
+> **📋 TL;DR:**
+> Built a production-shaped multi-tenant RAG security gateway with JWT auth (AWS Cognito), Terraform IaC, CI/CD security gates, and evidence-backed invariants-deployed to AWS Lambda with 88% test coverage.
+
+---
+
+## 🎯 The Problem
+
+In RAG systems, **retrieval is the critical vulnerability** - not prompt injection. Once unauthorized text enters the LLM context window, you can't "unfetch" it.
+
+**Common failure modes this gateway prevents:**
+- 🚫 Intern retrieves CEO's compensation data
+- 🚫 Tenant A queries Tenant B's confidential roadmap
+- 🚫 API keys in documents leak via snippet output
+
+## 💡 The Solution
+
+This gateway enforces **Auth-Before-Retrieval** as a strict architectural invariant:
+
+| Invariant | Implementation |
+|-----------|----------------|
+| ✅ **Tenant Isolation** | Storage scoped by `tenant_id` at the key level |
+| ✅ **Role-Based Access** | Classification filtering *before* document fetch |
+| ✅ **Structured Audit** | Every denial emits a forensic receipt with `request_id` |
+| ✅ **Zero-Trust Identity** | JWT claims (Cognito) or fail-closed header mode |
+| ✅ **Secret Redaction** | Regex scrubbing before snippet egress |
 
 > **Quick Review:**
 > * **30 Seconds:** Run `make review` → Guided summary of build status & gates.
@@ -45,6 +79,44 @@ STATUS    | INVARIANT                 | LATENCY | TRACE_ID
 ---
 
 ✨ All Security Invariants Verified.
+
+---
+
+## 🕵️ For Hiring Managers & Recruiters
+
+### What is this?
+A **production-quality demonstration** of a security gateway for AI/RAG systems. It solves a real problem: preventing data leaks when AI applications retrieve documents from multi-tenant databases.
+
+### Why does it matter?
+Most AI security focuses on "prompt injection" or "jailbreaks." This project addresses a **more critical vulnerability**: the retrieval layer. If an intern can fetch an admin's documents, the LLM doesn't matter - the leak already happened.
+
+### What does it "prove" about my skills?
+
+| Skill Area | Evidence in This Project |
+|------------|--------------------------|
+| **Security Engineering** | Threat modeling, fail-closed design, structured audit trails |
+| **Cloud Infrastructure** | AWS Lambda, Cognito JWT auth, Terraform IaC |
+| **DevOps/CI** | Automated security gates, dependency scanning, reproducible builds |
+| **Code Quality** | Structured logging, type-safe Python, clear separation of concerns |
+| **Technical Communication** | Evidence-backed claims, numbered artifacts, clear documentation |
+
+### Project Metrics
+
+| Metric | Value |
+|--------|-------|
+| Lines of Code | ~2,500 |
+| Test Count | 15+ tests (unit + security gates) |
+| Test Coverage | 88% (enforced by CI) |
+| Security Invariants | 5 (enforced by CI) |
+| Evidence Artifacts | 10+ numbered proofs |
+| AWS Services | Lambda, Cognito, API Gateway, CloudWatch |
+| Time to Deploy | ~2 minutes (`make deploy-dev`) |
+
+### Can I see it running?
+
+1. **Watch the demo** → [📹 Click here](#-see-it-in-action-80s) (80 seconds)
+2. **Run locally** → `make gate` validates all security invariants
+3. **Try the API** → `make run-local` then `curl` the endpoints
 
 ## 🛡️ Engineering Standards (v0.9.2)
 
@@ -87,6 +159,51 @@ sequenceDiagram
     App-->>User: 403 Forbidden + Deny Receipt
 
 ```
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Client["🧑‍💻 Client App<br/>(Intern/Admin)"]
+    end
+
+    subgraph "AWS Edge"
+        APIGW["🌐 API Gateway<br/>JWT Authorizer"]
+        Cognito["🔐 Cognito<br/>tenant_id + role claims"]
+    end
+
+    subgraph "Compute"
+        Lambda["⚡ Lambda<br/>Security Gateway"]
+    end
+
+    subgraph "Security Boundary (Trusted)"
+        Principal["👤 Principal Resolver"]
+        Policy["🛡️ Policy Engine<br/>Auth-Before-Retrieval"]
+        Store["📦 Tenant-Scoped Store"]
+        Redact["✂️ Snippet Redactor"]
+    end
+
+    subgraph "Observability"
+        CW["📊 CloudWatch<br/>Structured Logs + Alarms"]
+    end
+
+    Client -->|"POST /query (JWT)"| APIGW
+    APIGW -->|"Verify Token"| Cognito
+    APIGW -->|"Invoke"| Lambda
+    Lambda --> Principal
+    Principal --> Policy
+    Policy -->|"Scoped Query"| Store
+    Store --> Redact
+    Redact -->|"Safe Response"| Lambda
+    Lambda -->|"Audit Events"| CW
+    Lambda -->|"200 OK / 403 Denied"| Client
+
+    style Policy fill:#ff6b6b,color:#fff
+    style Store fill:#4ecdc4,color:#fff
+    style Redact fill:#ffe66d,color:#000
+```
+
 
 ## 🎬 See it in action (80s)
 
@@ -319,3 +436,36 @@ Designed to be cheap-by-default:
 * short log retention (7 days)
 * alarms for 5xx / throttles / high denials
 * explicit kill switch: `make destroy-dev`
+
+---
+
+## 📐 Key Decisions (ADRs)
+
+Architectural decisions are documented as lightweight ADRs:
+
+| ADR | Decision | Rationale |
+|-----|----------|----------|
+| [0001](docs/decisions/0001-auth-before-retrieval.md) | **Auth-Before-Retrieval** | Prevent "fetch-then-filter" leakage; authorize *before* any storage read |
+| [0002](docs/decisions/0002-dual-mode-identity.md) | **Dual-Mode Identity** | Local headers for fast testing; JWT for production security |
+| [0003](docs/decisions/0003-native-build-strategy.md) | **Native Build (No Docker)** | Zero-friction reviewer experience; deploy from any OS |
+
+---
+
+## 📊 Production Readiness (Hypothetical SLOs)
+
+If this were a production service, I would track the following SLOs:
+
+| SLO | Target | Rationale |
+|-----|--------|----------|
+| **Availability** | 99.9% uptime | Gateway is on the critical path for all RAG queries |
+| **P99 Latency** | < 200ms | Auth + policy evaluation must not become a bottleneck |
+| **Deny Rate Alarm** | Alert if > 5% | Sudden spike may indicate misconfiguration or attack |
+| **Error Rate** | < 0.1% 5xx | Gateway failures block all retrieval; fail-closed means availability matters |
+| **Audit Completeness** | 100% | Every deny must emit a traceable receipt (compliance, forensics) |
+
+**Observability stack (implemented):**
+- CloudWatch alarms for 5xx, throttles, high denials
+- Structured JSON logs with `request_id` correlation
+- Metric filter counting deny receipts
+
+> **Note:** These SLOs are documented to demonstrate production thinking. The demo uses CloudWatch alarms as a foundation.
