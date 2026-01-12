@@ -2,9 +2,9 @@
 
 > Truth scope: accurate as of **v0.9.2**.
 
-> Demo scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity—not maximum feature surface.
+> Demo scope: this is a **production-shaped demo** optimized for security invariants, auditability, and interview clarity - not maximum feature surface.
 
-This document captures “why” decisions so the system is believable, reviewable, and easy to defend in interviews.
+> This document captures “why” decisions so the system is believable, reviewable, and easy to defend in interviews.
 
 ---
 
