@@ -4,7 +4,7 @@
 
 ### Stop patching prompts. Start securing retrieval.
 
-**A production-shaped multi-tenant RAG security gateway that makes unauthorized retrieval *impossible by construction*.**
+**A production-shaped multi-tenant RAG security gateway that enforces *Auth-Before-Retrieval* invariants to prevent data leakage.**
 
 [![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/codeql.yml)
@@ -97,7 +97,7 @@ Most AI security focuses on "prompt injection" or "jailbreaks." This project add
 | **Security Engineering** | Threat modeling, fail-closed design, structured audit trails |
 | **Cloud Infrastructure** | AWS Lambda, Cognito JWT auth, Terraform IaC |
 | **DevOps/CI** | Automated security gates, dependency scanning, reproducible builds |
-| **Code Quality** | Structured logging, type-safe Python, clear separation of concerns |
+| **Code Quality** | Interface-based architecture (Adapter pattern), type-safe Python, structured logging |
 | **Technical Communication** | Evidence-backed claims, numbered artifacts, clear documentation |
 
 ### Project Metrics
@@ -421,10 +421,10 @@ I prioritized **security invariants** and **reviewer experience** over feature b
 * **Decision:** We do not use Docker for builds. Instead, we use a custom script to vendor `manylinux2014_x86_64` wheels directly.
 * **Why:** Reviewer Friction. Requiring Docker prevents many reviewers (especially on Mac/Windows) from easily deploying the cloud slice. This approach allows a reviewer to deploy to AWS from a fresh laptop in seconds with zero system dependencies beyond Python.
 
-### 5. In-Memory Store (Demo) vs. Database
+### 5. In-Memory Store (Adapter Pattern) vs. Database
 
-* **Decision:** The demo uses a strict `InMemoryStore` instead of connecting to a real database (DynamoDB/Pinecone).
-* **Why:** Reproducibility. A "production-shaped" demo must work on the reviewer's machine immediately. Cloud credentials and database setup introduce friction that distracts from the security logic.
+* **Decision:** The system implements a decoupled `RetrievalStore` interface. The demo uses an `InMemoryStore` implementation, but the architecture supports hot-swapping to Vector DBs (Qdrant/Pinecone).
+* **Why:** Reproducibility & Dependency Inversion. This allows the security logic to be tested in isolation without requiring external database infrastructure, while maintaining a production-ready interface for "Day 2" integration.
 
 ---
 

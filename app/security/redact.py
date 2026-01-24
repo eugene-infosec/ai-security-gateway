@@ -6,9 +6,9 @@ PATTERNS = {
     # AWS Access Key ID (e.g., AKIA...)
     "AWS_KEY": r"(AKIA[0-9A-Z]{16})",
     # Stripe Secret Key (e.g., sk_live_...)
-    "STRIPE_SECRET": r"(sk_live_[0-9a-zA-Z]{24})",
+    "STRIPE_SECRET": r"(sk_live_[0-9a-zA-Z]{24})",  # nosec B105
     # Generic "secret =" pattern
-    "GENERIC_SECRET": r"(?i)(secret|password|token|key)\s*[:=]\s*([^\s]+)",
+    "GENERIC_SECRET": r"(?i)(secret|password|token|key)\s*[:=]\s*([^\s]+)",  # nosec B105
 }
 
 
