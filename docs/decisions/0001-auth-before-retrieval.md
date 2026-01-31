@@ -1,30 +1,55 @@
 # ADR 0001: Authorization Before Retrieval
 
-> Truth scope: accurate as of **v0.9.2**.
+> Truth scope: accurate as of **v1.0.0**.
 
 ## Context
 
-Many RAG implementations follow a **fetch-then-filter** pattern: retrieve top-*k* documents, then remove any results the user should not see.
+Many retrieval (RAG / “chat over docs”) implementations follow a **fetch-then-filter** pattern:
 
-**Risk:** this creates a “silent leakage” window where unauthorized text is fetched into application memory (and can enter snippet generation / context windows). If filtering is buggy, incomplete, or bypassed, sensitive content can leak.
+1) retrieve top-*k* documents based on semantic similarity or keyword match
+2) filter out any results the user should not see
+
+**Risk:** This creates a “silent leakage” window where unauthorized text is fetched into application memory and can enter:
+- snippet generation
+- logs/telemetry
+- LLM context windows
+- downstream caches or traces
+
+Even if post-filtering exists, bugs, partial filtering, or accidental bypass can expose sensitive content. In regulated environments, this is both a security failure and an auditability failure.
 
 ## Decision
 
-Enforce **Auth-Before-Retrieval** as a non-negotiable invariant.
+Enforce **Auth-Before-Retrieval** as a **non-negotiable invariant**.
 
-The gateway derives a `Principal` (user, tenant, role) and uses the `PolicyEngine` to compute an **allowed retrieval scope** (e.g., `tenant_id` + allowed `classification` set) **before** constructing any storage query or retrieval candidate set.
+The gateway:
+1. Derives a `Principal` (`user_id`, `tenant_id`, `role`) from trusted identity signals (deterministic headers in local demo; verified JWT claims in cloud).
+2. Computes an **allowed retrieval scope** *before any store access*, expressed as:
+   - `tenant_id` (structural isolation)
+   - an allowed `classification` set (role/classification policy)
+3. Performs retrieval only on the already-authorized scope:
+   - `candidates = STORE.list_scoped(tenant_id=..., allowed_classifications=...)`
+4. Runs ranking and snippet generation only on `candidates`.
 
-Storage reads are tenant-scoped by design (structural isolation), and retrieval/snippet generation runs only on the already-authorized candidate set.
+This ensures the system never “touches” unauthorized content in the retrieval/snippet path.
 
 ## Consequences
 
 ### Positive
 
-* Unauthorized data is never fetched into the retrieval/snippet path (stronger security boundary).
-* Security properties are testable and regression-resistant (`make gate` asserts the invariant).
-* More predictable performance: no wasted reads of data that would be discarded later.
+- **Stronger boundary:** Unauthorized data is never fetched into the retrieval/snippet path.
+- **Audit-friendly:** Decisions are explicit and correlatable (deny receipts with `request_id` + `reason_code`).
+- **Regression resistant:** The invariant is executable and continuously verified (e.g., `make verify` / `make gate`).
+- **Predictable performance:** No wasted reads of data that would be discarded after the fact.
 
-### Negative
+### Negative / Tradeoffs
 
-* Authorization rules must be expressible as **scope constraints** (tenant/classification) that can be enforced structurally.
-* Some advanced policy models (e.g., per-row ABAC with many attributes) may require additional indexing or a more expressive authorization layer to preserve auth-before-retrieval at scale.
+- Authorization rules must be expressible as **scope constraints** (tenant + classification) that can be enforced structurally.
+- More complex policy models (e.g., high-cardinality ABAC over many attributes) may require:
+  - additional indexing / query planning
+  - a more expressive policy engine
+  - or precomputed access partitions
+  to preserve Auth-Before-Retrieval at scale.
+
+## Notes
+
+This ADR intentionally prioritizes **security and reviewability** over convenience. In a regulated environment, “we fetched it but filtered it out later” is a weak guarantee-especially when snippets, logs, and traces exist.

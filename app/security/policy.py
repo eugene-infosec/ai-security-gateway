@@ -1,16 +1,33 @@
 from __future__ import annotations
 
+from typing import Dict, Set
 from fastapi import HTTPException
 from app.security.audit import audit
 from app.security.principal import Principal
 
 REASON_CLASSIFICATION_FORBIDDEN = "CLASSIFICATION_FORBIDDEN"
+REASON_ROLE_UNKNOWN = "ROLE_UNKNOWN_FAIL_CLOSED"
+
+# Explicit Policy Definition (Data-Driven)
+ROLE_POLICY: Dict[str, Set[str]] = {
+    "intern": {"public"},
+    "staff": {"public"},
+    "admin": {"public", "admin"},
+}
+
+
+def get_allowed_classifications(role: str) -> Set[str]:
+    """
+    Returns the set of allowed classifications for a given role.
+    Fails closed (returns empty set) if role is unknown.
+    """
+    return ROLE_POLICY.get(role, set())
 
 
 def deny(*, principal: Principal, request_id: str, path: str, reason_code: str) -> None:
     """
     Centralized deny handler.
-    1. Emits forensic receipt (audit log).
+    1. Emits audit-grade deny receipt.
     2. Raises 403 exception.
     """
     audit(
@@ -32,7 +49,6 @@ def authorize_ingest(
     *, principal: Principal, classification: str, request_id: str, path: str
 ) -> None:
     # Phase 3 Rule: Interns (non-admins) may never ingest admin-classified docs.
-    # This is a 'negative' invariant (what MUST NOT happen).
     if principal.role != "admin" and classification == "admin":
         deny(
             principal=principal,

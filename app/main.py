@@ -23,7 +23,12 @@ from app.models import (  # noqa: E402
 )
 from app.security.audit import audit, sha256_hex  # noqa: E402
 from app.security.jwt_claims import get_jwt_claims_from_asgi_scope  # noqa: E402
-from app.security.policy import authorize_ingest  # noqa: E402
+from app.security.policy import (  # noqa: E402
+    REASON_ROLE_UNKNOWN,
+    authorize_ingest,
+    deny,
+    get_allowed_classifications,
+)
 from app.security.principal import (  # noqa: E402
     resolve_principal_from_headers,
     resolve_principal_from_jwt_claims,
@@ -31,6 +36,7 @@ from app.security.principal import (  # noqa: E402
 from app.security.redact import redact_text  # noqa: E402
 from app.settings import ALLOW_INSECURE_HEADERS, AUTH_MODE  # noqa: E402
 from app.store import STORE  # noqa: E402
+from app.version import __version__ as version  # noqa: E402
 
 logger = logging.getLogger("app.main")
 access_logger = logging.getLogger("app.access")
@@ -62,7 +68,7 @@ async def lifespan(app: FastAPI):
     # (Cleanup logic would go here)
 
 
-app = FastAPI(title="AI Security Gateway", lifespan=lifespan)
+app = FastAPI(title="Compliance-Aligned Data Access Gateway", lifespan=lifespan)
 
 
 # -----------------------------------------------------------------------------
@@ -74,7 +80,6 @@ def _derive_request_id(request: Request) -> str:
     raw = request.headers.get("X-Request-Id", "").strip()
 
     # CRITICAL FIX: Ensure 'raw' is not empty before returning it.
-    # An empty string is falsy, so checking "if raw" prevents returning ""
     if raw and len(raw) < 64 and all(c.isalnum() or c in "-_." for c in raw):
         return raw
 
@@ -126,7 +131,7 @@ async def request_context(request: Request, call_next):
         # TRACE CORRELATION SIGNAL
         # ---------------------------------------------------------
         response.headers["X-Request-Id"] = rid
-        response.headers["X-Trace-Id"] = rid  # <--- NEW: Alias for client correlation
+        response.headers["X-Trace-Id"] = rid  # Alias for client correlation
 
         return response
     except Exception:
@@ -158,7 +163,11 @@ async def request_context(request: Request, call_next):
 # -----------------------------------------------------------------------------
 @app.get("/health")
 def health(request: Request):
-    return {"ok": True, "request_id": request.state.request_id}
+    return {
+        "ok": True,
+        "version": version,
+        "request_id": request.state.request_id,
+    }
 
 
 @app.get("/whoami")
@@ -212,10 +221,20 @@ def query(payload: QueryRequest, request: Request):
     p = resolve_principal(request)
 
     # 1) Scope calculation (Auth-Before-Retrieval)
-    allowed = {"public", "admin"} if p.role == "admin" else {"public"}
+    allowed = get_allowed_classifications(p.role)
+
+    if not allowed:
+        # Unknown roles fail closed with a deny receipt
+        deny(
+            principal=p,
+            request_id=request.state.request_id,
+            path=str(request.url.path),
+            reason_code=REASON_ROLE_UNKNOWN,
+        )
 
     candidates = STORE.list_scoped(
-        tenant_id=p.tenant_id, allowed_classifications=allowed
+        tenant_id=p.tenant_id,
+        allowed_classifications=list(allowed),
     )
 
     # 2) Ranking (Simple Keyword Match)

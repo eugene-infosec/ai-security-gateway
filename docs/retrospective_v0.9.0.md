@@ -15,7 +15,7 @@ This release focused on **reviewer empathy** and **build engineering**. While v0
 
 ## 2) IaC Correctness: The Duplicate Resource Bug
 
-**Issue:** A copy-paste error in `infra/terraform/cognito.tf` left two definitions of the User Pool—one secure (immutable) and one insecure (mutable). This caused Terraform to crash on apply, blocking the "happy path" for reviewers.
+**Issue:** A copy-paste error in `infra/terraform/cognito.tf` left two definitions of the User Pool-one secure (immutable) and one insecure (mutable). This caused Terraform to crash on apply, blocking the "happy path" for reviewers.
 
 **Fix:** **Cleaned and Locked the Infrastructure.**
 - Removed the duplicate resource, keeping only the strict `mutable = false` definition.

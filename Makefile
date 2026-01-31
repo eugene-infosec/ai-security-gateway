@@ -1,5 +1,5 @@
-# AI Security Gateway
-# v0.9.2
+# Compliance-Aligned Data Access Gateway
+# v1.0.0
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 SHELL := /bin/bash
@@ -13,13 +13,13 @@ PIP := $(BIN)/pip
 # Make targets that run the app/tests set this explicitly so review is frictionless.
 LOCAL_ENV := AUTH_MODE=headers ALLOW_INSECURE_HEADERS=true
 
-.PHONY: help bootstrap install fmt lint sec audit test gate ci \
+.PHONY: help bootstrap install fmt lint sec audit test gate ci verify \
 	run-local smoke-local pack-lambda \
 	doctor doctor-aws deploy-dev destroy-dev smoke-cloud logs-cloud \
 	docker-build docker-run clean review
 
 help:
-	@echo "Targets: bootstrap install fmt lint sec audit test gate ci run-local smoke-local deploy-dev smoke-cloud logs-cloud docker-build docker-run clean review"
+	@echo "Targets: bootstrap install fmt lint sec audit test gate ci verify run-local smoke-local deploy-dev smoke-cloud logs-cloud docker-build docker-run clean review"
 
 # -----------------------------------------------------------------------------
 # Reviewer Empathy
@@ -27,20 +27,20 @@ help:
 review:
 	@clear
 	@echo "======================================================================"
-	@echo "🛡️  AI SECURITY GATEWAY - REVIEWER SUMMARY"
+	@echo "🛡️  COMPLIANCE-ALIGNED DATA ACCESS GATEWAY - REVIEWER SUMMARY"
 	@echo "======================================================================"
 	@echo ""
-	@echo "✅  Build Status:      See CI badge (or run 'make gate')"
+	@echo "✅  Build Status:      See CI badge (or run 'make verify')"
 	@echo "🔒  Vulnerabilities:   Run 'make audit'"
 	@echo "🕵️  Security Gates:    ACTIVE (Tenant Isolation, Safe Logging, etc.)"
-	@echo "🏗️  Infrastructure:    Terraform + AWS Lambda (Ready)"
+	@echo "🏗️  Infrastructure:    Terraform + AWS Lambda (Dev Slice)"
 	@echo ""
 	@echo "----------------------------------------------------------------------"
 	@echo "🚀  NEXT STEPS FOR REVIEWER:"
 	@echo "----------------------------------------------------------------------"
-	@echo "1. Run 'make gate'        -> To re-verify the full security suite."
-	@echo "2. Run 'make smoke-local' -> To see the API handle a request locally."
-	@echo "3. Read 'docs/tradeoffs.md' -> To see architectural decisions."
+	@echo "1. Run 'make verify'      -> Re-verify the full security suite."
+	@echo "2. Run 'make smoke-local' -> See the API handle a request locally."
+	@echo "3. Read 'docs/controls.md' -> Controls → Implementation → Evidence."
 	@echo ""
 	@echo "======================================================================"
 
@@ -72,7 +72,7 @@ lint: bootstrap
 sec: bootstrap
 	@cd $(ROOT) && $(BIN)/bandit -r app -q
 
-# Supply-chain audit (CVE scanning) — runtime is the highest-signal set
+# Supply-chain audit (CVE scanning) - runtime is the highest-signal set
 audit: bootstrap
 	@cd $(ROOT) && $(BIN)/pip-audit -r requirements-runtime.txt
 
@@ -92,6 +92,9 @@ gate: bootstrap
 	@echo "✅ ALL GATES PASSED."
 
 ci: gate
+
+# Auditor-friendly alias (no drift)
+verify: gate
 
 # -----------------------------------------------------------------------------
 # Local dev

@@ -1,15 +1,17 @@
 # Architecture
 
-> Truth scope: accurate as of **v0.9.2**.
+> Truth scope: accurate as of **v1.0.0**.
 
 ## Goal
 
-A multi-tenant gateway that enables “AI-style retrieval” while enforcing non-negotiable security invariants **inside** a strict trust boundary.
+A production-shaped, multi-tenant **data access gateway** that enables retrieval (including RAG-style “chat over docs”) while enforcing non-negotiable security invariants **inside** a strict trust boundary.
 
-This project targets the most common RAG failure mode: **unauthorized retrieval** (admin leakage or cross-tenant leakage). The core idea is simple:
+This project targets the most common failure mode in retrieval systems: **unauthorized retrieval** (admin leakage or cross-tenant leakage). The core idea is simple:
 
-> If unauthorized text ever enters retrieval/snippet generation, you can’t “unfetch” it.
-> So authorization must happen **before** retrieval and before any snippet is produced.
+> If unauthorized text ever enters application memory (or an LLM context window), you can’t “unfetch” it.
+> Therefore, authorization must happen **before** retrieval and before any snippet is produced.
+
+For the authoritative list of enforced controls and linked evidence artifacts, see the **[Controls Catalog](./controls.md)**.
 
 ---
 
@@ -17,13 +19,13 @@ This project targets the most common RAG failure mode: **unauthorized retrieval*
 
 This gateway is designed to be the **single choke point** for retrieval in a product:
 
-* Teams building RAG features call **this gateway** for retrieval/snippets instead of querying the store directly.
-* The document store is treated as **passive**; all access control happens in the gateway.
+- Teams building retrieval/RAG features call **this gateway** for retrieval + snippets instead of querying the store directly.
+- The backing document store is treated as **passive**; all access control happens in the gateway.
 
-### Concrete scenario (what it prevents)
+### Concrete scenarios (what it prevents)
 
-* **Intern in Tenant A** tries to retrieve **Tenant A admin runbook** → **blocked** + deny receipt (`reason_code`, `request_id`).
-* **Intern in Tenant A** tries to retrieve **Tenant B roadmap** → **blocked** + deny receipt.
+- **Intern in Tenant A** tries to retrieve **Tenant A admin runbook** → **blocked** + audit-grade deny receipt (`reason_code`, `request_id`).
+- **Intern in Tenant A** tries to retrieve **Tenant B roadmap** → **blocked** + audit-grade deny receipt.
 
 ---
 
@@ -32,25 +34,26 @@ This gateway is designed to be the **single choke point** for retrieval in a pro
 ```mermaid
 flowchart LR
   User["Client / User"] -->|HTTP Request| Edge["API Gateway (Edge)"]
-  Edge -->|Forward Request| App["AI Security Gateway (FastAPI on Lambda)"]
+  Edge -->|Forward Request| App["Compliance-Aligned Data Access Gateway (FastAPI on Lambda)"]
 
   subgraph TC["Trusted Compute (Invariant Boundary)"]
     App -->|"1. Derive Principal"| Principal["Principal Resolver"]
-    App -->|"2. Authorize Scope"| Policy["Policy Engine"]
+    App -->|"2. Authorize Scope"| Policy["Policy Engine (Auth-Before-Retrieval)"]
     App -->|"3. Tenant-Scoped Access"| Store[("Doc Store: In-Memory (Simulated)")]
     App -->|"4. Rank + Safe Snippet"| Search["Search + Snippet Engine"]
-    App -->|"5. Deny Receipt + Audit"| Audit["Safe Logger / Audit"]
+    App -->|"5. Deny Receipt + Audit"| Audit["Safe Logger / Audit (schema_versioned)"]
   end
 
   Audit --> Logs[("CloudWatch / Stdout")]
-
 ```
 
-## Data Layer (Simulated)
+---
 
-* **Status:** In-Memory (Non-Persistent).
-* **Why:** To maintain a zero-cost, portable, and reproducible demo environment, this reference implementation uses a thread-local in-memory store.
-* **Production Path:** In a real deployment, the `InMemoryStore` class is swapped for a persistent vector or document store (e.g., DynamoDB, Pinecone, pgvector). The `list_scoped` interface allows the security logic to remain identical regardless of the backing storage.
+## Data layer (simulated)
+
+* **Status:** In-memory (non-persistent).
+* **Why:** To keep the demo zero-cost, portable, and reproducible, this reference implementation uses a thread-local in-memory store.
+* **Production path:** In a real deployment, the `InMemoryStore` is swapped for a persistent store (e.g., DynamoDB, pgvector, Pinecone). The `list_scoped(...)` interface preserves the same security logic regardless of backing storage.
 
 ---
 
@@ -61,7 +64,7 @@ flowchart LR
 * Request headers and body
 * Query text
 * Stored document text
-* Any client-supplied claims
+* Any client-supplied claims or identifiers
 
 ### What is trusted (invariant boundary)
 
@@ -75,20 +78,8 @@ flowchart LR
 
 ## Identity source (local vs cloud)
 
-* **Local dev:** identity is mocked via headers (`X-User`, `X-Tenant`, `X-Role`) for deterministic demos and security gates.
-* **Cloud dev:** identity is enforced at the edge by an **API Gateway JWT authorizer** backed by **Cognito**. Lambda only processes requests with valid, cryptographically signed claims, which are mapped into the same `Principal` model used locally.
-
----
-
-## Security invariants (enforced by code + checked by `make gate`)
-
-1. **Auth-Before-Retrieval:** permissions are applied to the retrieval scope (not filtered post-fetch).
-2. **Strict Tenant Isolation:** tenant is derived server-side; storage reads/writes are tenant-scoped.
-3. **No Admin Leakage:** non-admin roles must never retrieve admin-classified titles/snippets/bodies.
-4. **Safe Logging:** logs must never contain raw request bodies/queries/auth headers/tokens.
-5. **Evidence-over-Claims:** denials are traceable via `request_id` and backed by numbered evidence artifacts.
-6. **No Secret Egress via Snippets:** snippet output is redacted to prevent leaking secrets even if they exist in stored docs.
-7. **Supply Chain Security:** runtime dependencies are audited for CVEs before every deployment.
+* **Local dev:** Identity is mocked via headers (`X-User`, `X-Tenant`, `X-Role`) for deterministic demos and security gates. This mode is **fail-closed by default** unless explicitly enabled (`ALLOW_INSECURE_HEADERS=true`).
+* **Cloud dev:** Identity is enforced at the edge by an **API Gateway JWT authorizer** backed by **Cognito**. Lambda only processes requests with valid, cryptographically signed claims, which are mapped into the same `Principal` model used locally.
 
 ---
 
@@ -96,8 +87,8 @@ flowchart LR
 
 Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 
-* The thesis of this project is the **security boundary** (auth-before-retrieval + tenant scoping + auditable denials), not embeddings.
-* Lexical retrieval keeps demos and gates deterministic while still exercising the same authorization, scoping, and snippet pathways a vector system would.
+* The thesis of this project is the **security boundary** (auth-before-retrieval + tenant scoping + auditable denials), not embeddings quality.
+* Lexical retrieval keeps demos and gates deterministic while exercising the same authorization, scoping, and snippet pathways a vector system would.
 
 ---
 
@@ -106,14 +97,13 @@ Retrieval is **lexical** (simple keyword scoring) **by design** (demo-scoped):
 ### Local request flow (deterministic)
 
 * Identity is provided via headers: `X-User`, `X-Tenant`, `X-Role`.
-* Middleware assigns a `request_id` and returns `X-Request-Id` (aliased as **X-Trace-Id** for standard client correlation).
+* Middleware assigns a `request_id` and returns `X-Request-Id` (aliased as **X-Trace-Id** for client correlation).
 * Authorization is evaluated before sensitive actions:
-* before ingestion writes
-* before query retrieval/snippet generation
 
-
+  * before ingestion writes
+  * before query retrieval/snippet generation
 * Storage access is tenant-scoped (structural isolation).
-* Logging is structured JSON (“deny receipts”).
+* Logging is structured JSON with deny receipts.
 
 ### Cloud dev slice (AWS)
 
@@ -127,22 +117,16 @@ Provisioned via Terraform:
 * Metric filter counts deny receipts from structured logs
 
 ---
-## Client Verification
 
-* **Reference Client:** A standalone script (`examples/reference-client/verify.py`) treats the Gateway as a black box.
-* **Role:** It validates the "Product Contract" (Service Liveness, Identity Resolution, Fail-Closed Policy) via real HTTP requests, ensuring the system behaves as documented for downstream consumers.
+## Client verification
+
+* **Reference client:** `examples/reference-client/verify.py` treats the gateway as a black box.
+* **Role:** Validates the “consumer contract” (service liveness, identity resolution, fail-closed policy) via real HTTP requests.
+
 ---
 
-## Proof hooks
+## Evidence & proof
 
-* `make gate` runs:
-* `no_admin_leakage_gate`
-* `tenant_isolation_gate`
-* `safe_logging_gate`
-* `pip-audit` (CVE scanning)
-
-
-
-Evidence is indexed in `evidence/INDEX.md`.
-
-> If you only review one thing: the claims are executable (`make ci` / `make gate`) and supported by screenshots in `evidence/`.
+* Evidence index: **[`evidence/INDEX.md`](../evidence/INDEX.md)**
+* Controls → implementation → evidence mapping: **[`docs/controls.md`](./controls.md)**
+* Executable proof commands are documented in **[Operations](./operations.md)**.

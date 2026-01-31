@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.0.0] - 2026-01-31
+
+### Security & Correctness
+* **Log Safety Single Source of Truth:** Consolidated sensitive logging rules into `app/security/log_safety.py` and wired both the global JSON logger and the audit subsystem to use the same scrubbing logic. This eliminates the "drift risk" of having divergent forbidden-key lists in different parts of the application.
+* **Safe Logging Invariant Maintained:** Refactored the logging subsystem to use an "Allowlist & Redact" pattern instead of "Denylist & Crash." This ensures availability (logging failures don't crash the app) while strictly maintaining the "no body/query/auth headers/tokens" contract enforced by `make gate`.
+
+### Documentation & Reviewer Experience
+* **Docs Table of Contents:** Added `docs/README.md` as the central navigation hub, providing fast-scan paths and clear "Start Here" routing for different personas (Auditors vs. Engineers).
+* **Operations Consolidation:** Merged the demo script, runbook, and cost guidance into a single `docs/operations.md`. This creates a unified "Reviewer Handbook" for running, verifying, deploying, and tearing down the system.
+* **Architecture Simplification:** Refined `docs/architecture.md` to focus on system design (Data Flow, Trust Boundaries) while delegating the detailed control verification to the authoritative `docs/controls.md`.
+
+### Repo Hygiene & Release Readiness
+* **Docs Cleanup:** Deleted redundant files (`docs/demo.md`, `docs/runbook.md`, `COSTS.md`) to reduce cognitive load.
+* **Version Truth Scope:** Updated "Truth scope" banners across all documentation and evidence artifacts to reflect **v1.0.0** accuracy.
+* **Artifact Integrity:** Added SHA-256 hashes (`evidence/E11_artifact_hashes.txt`) for all evidence files to ensure tamper-evidence.
+
+---
+
 ## [v0.9.2] - 2026-01-09
 
 ### Observability & Client Experience

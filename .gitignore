@@ -1,67 +1,121 @@
-# ---- Python ----
-__pycache__/
+# Python
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
 *.py[cod]
+*$py.class
 *.so
-*.egg-info/
+
+# Packaging / build artifacts
 build/
 dist/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.pyright/
-.coverage
-htmlcov/
-.cache/
-.ipynb_checkpoints/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# Virtual environments
 .venv/
 venv/
 ENV/
+.env/           # if someone makes a folder named .env
+.venv.bak/
+venv.bak/
 
-# ---- Environment / secrets (never commit) ----
+# PEP 582 (pdm / __pypackages__)
+__pypackages__/
+
+# Type checkers / linters / formatters
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.cache/         # keep if you want a clean repo; remove if you commit cache intentionally
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Docs build outputs (common)
+docs/_build/
+site/
+
+# Environment / secrets (never commit)
 .env
 .env.*
 .envrc
 secrets/
+**/secrets/
 *.pem
 *.key
 *.p12
 *.pfx
 *.jks
 *.kdbx
+
+# SSH keys / common private key filenames
 id_rsa
 id_rsa.pub
 id_ed25519
 id_ed25519.pub
 
-# ---- Terraform (never commit state or local plans) ----
+# Terraform (never commit state or local plans)
 **/.terraform/
 **/*.tfstate
 **/*.tfstate.*
 **/*.tfplan
+**/*.tfstate.backup
+**/.terraform.tfstate.lock.info
 crash.log
 crash.*.log
+
+# Ignore local override files
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Variable files (often contain secrets)
 *.tfvars
 *.tfvars.json
+
+# Terragrunt / tooling caches (if you use them)
+.terragrunt-cache/
+.tflint.d/
+.tfsec/
 
 # IMPORTANT: DO commit provider lockfile
 !**/.terraform.lock.hcl
 
-# ---- AWS / Serverless build artifacts ----
+# If you want to allow examples into the repo:
+!*.tfvars.example
+!*.tfvars.json.example
+
+# AWS / Serverless build artifacts
 lambda_function.zip
 .aws-sam/
 .serverless/
+.sam/
 
-# ---- IDE / OS ----
+# IDE / OS
 .vscode/
 .idea/
-.DS_Store
+*.iml
+**/.DS_Store
 Thumbs.db
 Desktop.ini
 
-# ---- Logs / temp evidence ----
+# Logs / temp evidence / misc
 *.log
+*.tmp
+*.swp
+*~
 evidence/temp/
+**/evidence/temp/
