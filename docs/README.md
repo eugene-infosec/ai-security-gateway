@@ -45,6 +45,7 @@ This folder is the documentation hub for the repository. If you only have a few 
 | **[Threat Model](./threat_model.md)** | Asset definitions, risks, and mitigations (STRIDE-aligned). |
 | **[Public Sector Notes](./public_sector_notes.md)** | Context for FOIPPA/PIPA alignment and data residency. |
 | **[Azure Mapping](./azure_mapping.md)** | Translation of AWS patterns to the Azure Enterprise Stack. |
+| **[Azure Sentinel Queries](./azure_sentinel_queries.md)** | KQL examples for detection and investigation. |
 
 ---
 

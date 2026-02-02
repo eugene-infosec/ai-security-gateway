@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🛡️ Compliance-Aligned Data Access Gateway (v1.0.0)
+# 🛡️ AI Security Gateway - Compliance-Aligned Data Access Gateway
 
 ### Stop leaking data. Start enforcing boundaries.
 
 **A production-shaped, multi-tenant data access gateway that enforces *Auth-Before-Retrieval* invariants to prevent cross-tenant and role-based data leakage.**
 
-Designed to support privacy-constrained environments (e.g., public sector / healthcare) by demonstrating **privacy-aligned technical controls** for auditability and need-to-know access.
+Designed for privacy-constrained environments (e.g., **BC public sector – FOIPPA**, **BC private sector – PIPA**, healthcare) by demonstrating auditability, need-to-know access, and deterministic data boundaries.
 *Not legal advice. Not a certified compliance product.*
 
 [![CI](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-infosec/ai-security-gateway/actions/workflows/ci.yml)
@@ -15,15 +15,47 @@ Designed to support privacy-constrained environments (e.g., public sector / heal
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20Cognito-orange)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-purple)
+![Azure](https://img.shields.io/badge/Azure-Reference%20Arch-0078D4)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-[**Quick Start**](#-verify-in-90-seconds) · [**Architecture**](docs/architecture.md) · [**Threat Model**](docs/threat_model.md) · [**Controls Catalog**](docs/controls.md) · [**Public Sector Notes**](docs/public_sector_notes.md) · [**Evidence Index**](evidence/INDEX.md) · [**Watch Demo**](#-see-it-in-action-80s)
+[**Quick Start**](#-verify-in-90-seconds) ·
+[**Architecture**](docs/architecture.md) ·
+[**Threat Model**](docs/threat_model.md) ·
+[**Controls Catalog**](docs/controls.md) ·
+[**Public Sector Notes**](docs/public_sector_notes.md) ·
+[**Evidence Index**](evidence/INDEX.md) ·
+[**Watch Demo**](#-see-it-in-action-80s)
 
 </div>
 
 > **📋 TL;DR**
-> A reference secure retrieval gateway with AWS Cognito JWT auth, Terraform IaC, and **executable security gates**.
+> A reference secure retrieval gateway with AWS Cognito JWT auth, Terraform IaC, and **executable security gates** - plus **Azure deployment mapping** (Entra ID / APIM / Sentinel patterns).
 > **Coverage is CI-enforced (≥80%)**; the badge is a current snapshot.
+
+---
+
+## Why "AI Security Gateway"?
+
+This gateway was built for RAG-style retrieval (AI "chat over docs" systems) where unauthorized document chunks could leak into LLM context windows. The repo name reflects that origin.
+
+However, the security invariants it enforces-**tenant isolation**, **role-based access control**, **audit-grade deny receipts**, and **safe telemetry**-apply to any multi-tenant document retrieval system, including:
+
+- **BC public sector** (FOIPPA/PIPA constraints)
+- **Healthcare** need-to-know access scenarios
+- **Enterprise** multi-tenant SaaS platforms
+
+The “Compliance-Aligned Data Access Gateway” framing emphasizes this broader applicability, especially for reviewers who deeply understand access control, auditability, and data protection-regardless of whether LLMs are involved.
+
+> **TL;DR:** The architecture solves RAG security; the patterns generalize to any regulated retrieval.
+
+---
+
+## Skills Demonstrated
+
+- **Security Engineering:** Threat model, fail-closed design, executable gates
+- **Cloud Infrastructure:** AWS Lambda/Cognito/API Gateway + Azure reference mapping
+- **DevOps/CI:** GitHub Actions, Terraform IaC, reproducible verification
+- **Regulated Environments:** FOIPPA/PIPA-relevant technical controls, audit-grade receipts
 
 ---
 
@@ -34,9 +66,9 @@ If data enters application memory (or an LLM context window) before authorizatio
 
 **Common failure modes this gateway prevents:**
 
-* 🚫 **Cross-tenant leakage** (Tenant A retrieving Tenant B’s documents)
-* 🚫 **Role/classification leakage** (non-admin retrieving admin-classified content)
-* 🚫 **Sensitive data exposure** via logs/snippets (secrets/PII-shaped strings leaving via telemetry)
+- 🚫 **Cross-tenant leakage** (Tenant A retrieving Tenant B’s documents)
+- 🚫 **Role/classification leakage** (non-admin retrieving admin-classified content)
+- 🚫 **Sensitive data exposure** via logs/snippets (secrets/PII-shaped strings leaving via telemetry)
 
 ---
 
@@ -44,8 +76,8 @@ If data enters application memory (or an LLM context window) before authorizatio
 
 This gateway enforces **Auth-Before-Retrieval** as a strict architectural invariant:
 
-| Invariant                       | Implementation                                                          |
-| ------------------------------- | ----------------------------------------------------------------------- |
+| Invariant                        | Implementation                                                          |
+|----------------------------------|-------------------------------------------------------------------------|
 | ✅ **Tenant Isolation**          | Storage reads are scoped by `tenant_id`                                 |
 | ✅ **Role-Based Access**         | Classification filtering occurs **before** any document fetch           |
 | ✅ **Audit-Grade Deny Receipts** | Every denial emits a structured event with `reason_code` + `request_id` |
@@ -54,9 +86,9 @@ This gateway enforces **Auth-Before-Retrieval** as a strict architectural invari
 
 > **Quick Review**
 >
-> * **30 Seconds:** `make review` → guided summary (status, gates, next steps)
-> * **90 Seconds:** `make verify` → run the full gate suite → compare with [Evidence Index](evidence/INDEX.md)
-> * **5 Minutes:** `make run-local` → trigger a deny receipt → inspect `app/security/policy.py`
+> - **30 Seconds:** `make review` → guided summary (status, gates, next steps)
+> - **90 Seconds:** `make verify` → run the full gate suite → compare with [Evidence Index](evidence/INDEX.md)
+> - **5 Minutes:** `make run-local` → trigger a deny receipt → inspect `app/security/policy.py`
 
 ---
 
@@ -65,16 +97,15 @@ This gateway enforces **Auth-Before-Retrieval** as a strict architectural invari
 You can verify the gateway’s core invariants (identity resolution, fail-closed policy, traceability) using the included reference client.
 
 1. **Start the Gateway**
-
-   ```bash
+```bash
    make run-local
-   ```
+```
 
 2. **Run the Verification Client**
 
-   ```bash
+```bash
    python examples/reference-client/verify.py
-   ```
+```
 
 Example output:
 
@@ -92,7 +123,8 @@ STATUS | INVARIANT                | LATENCY | TRACE_ID
 
 ---
 
-## 🕵️ For Hiring Managers & Recruiters
+<details>
+<summary><b>🕵️ For Hiring Managers & Recruiters</b></summary>
 
 ### What is this?
 
@@ -117,18 +149,18 @@ Most demos focus on “attacks.” This project focuses on **controls**:
 | **DevOps / CI**             | Security gates, dependency scanning, reproducible verification commands    |
 | **Code Quality**            | Adapter-style store interface, type-safe Python, structured logging        |
 | **Technical Communication** | Evidence-backed claims and numbered artifacts                              |
+| **Azure readiness**         | Documented mapping for Entra ID / APIM / Sentinel detection patterns       |
 
-### Project Metrics
+### Project Metrics (CI-backed)
 
-| Metric              | Value                                      |
-| ------------------- | ------------------------------------------ |
-| Lines of Code       | ~2,500                                     |
-| Tests               | unit tests + executable security gates     |
-| Test Coverage       | ≥80% (enforced by CI; badge is a snapshot) |
-| Security Invariants | 5 (enforced by CI via `make gate`)         |
-| Evidence Artifacts  | 10+ numbered proofs                        |
-| AWS Services        | Lambda, API Gateway, Cognito, CloudWatch   |
-| Time to Deploy      | ~2 minutes (`make deploy-dev`)             |
+| Metric                   | Value / Notes                                                          |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Tests / Gates            | Unit tests + executable security gates (see CI logs and `make verify`) |
+| Test Coverage            | ≥80% enforced by CI; badge is a snapshot                               |
+| Security Invariants      | Enforced via gates (see “Non-negotiable security invariants”)          |
+| Evidence Artifacts       | Numbered proofs in `evidence/` + [Evidence Index](evidence/INDEX.md)   |
+| AWS Services (dev slice) | Lambda, API Gateway, Cognito, CloudWatch                               |
+| Azure                    | Reference mapping docs (Entra ID / APIM / Sentinel patterns)           |
 
 ### Can I see it running?
 
@@ -136,19 +168,7 @@ Most demos focus on “attacks.” This project focuses on **controls**:
 2. **Run locally** → `make verify` validates the invariants
 3. **Try the API** → `make run-local` then `curl` the endpoints
 
----
-
-## 🛡️ Engineering Standards (v1.0.0)
-
-This project enforces invariants through **infrastructure-as-code** and **automated gates**.
-
-| Standard          | Implementation                                                              | Evidence                                                    |
-| :---------------- | :-------------------------------------------------------------------------- | :---------------------------------------------------------- |
-| **Fail-Closed**   | App refuses to start if `AUTH_MODE` is misconfigured.                       | [E09: Crash Proof](evidence/E09_fail_closed.png)            |
-| **Observability** | Structured JSON logs for security-relevant events.                          | [E07: JSON Logs](evidence/E07_jwt_attack_receipt_cloud.png) |
-| **Automation**    | CI runs linters, tests, gates, and supply-chain checks.                     | [E10: CI Pipeline](evidence/E10_ci_pipeline.png)            |
-| **Zero Trust**    | Identity derived from verified JWT claims (Cognito), not client assertions. | [E06: JWT Identity](evidence/E06_jwt_whoami.png)            |
-| **Supply Chain**  | `pip-audit` runs on each gate run to surface known CVEs.                    | [E02: Gates Pass](evidence/E02_gate_pass_local.png)         |
+</details>
 
 ---
 
@@ -177,7 +197,6 @@ sequenceDiagram
     Note over App, DB: 🔒 Store is NEVER queried
 
     App-->>User: 403 Forbidden + Deny Receipt (request_id)
-
 ```
 
 ### System Architecture
@@ -383,7 +402,7 @@ make destroy-dev
 
 ---
 
-## 🎯 Demo framing (2 - 10 minutes)
+## 🎯 Demo framing (2–10 minutes)
 
 The fastest “real system” story to tell:
 
@@ -391,7 +410,7 @@ The fastest “real system” story to tell:
 2. **Threat:** “Intern in Tenant A tries to retrieve admin runbook / Tenant B roadmap.”
 3. **Result:** “Blocked before retrieval; deny receipt emitted; CI gates prevent regressions.”
 
-Full walkthrough: `docs/demo.md`.
+Full walkthrough: `docs/operations.md`.
 
 ---
 
@@ -402,40 +421,9 @@ Full walkthrough: `docs/demo.md`.
 * Controls catalog: `docs/controls.md`
 * Public sector notes: `docs/public_sector_notes.md`
 * Tradeoffs: `docs/tradeoffs.md`
-* Runbook: `docs/runbook.md`
-* Costs: `COSTS.md`
+* Operations (demo, runbook, costs): `docs/operations.md`
 * Decisions (ADRs): `docs/decisions/`
-
----
-
-## 🧠 Key Architectural Decisions
-
-I prioritized **security invariants** and **reviewer experience** over feature bloat.
-
-### 1) Deterministic lexical matching vs. vector search
-
-* **Decision:** Use deterministic lexical matching for the demo boundary.
-* **Why:** Security gates must be deterministic. The gateway enforces *scope*; semantic relevance can be handled downstream.
-
-### 2) Regex-based redaction vs. NLP redaction
-
-* **Decision:** Scrub secret/PII-shaped strings using regex patterns.
-* **Why:** Predictable latency and behavior on the critical path.
-
-### 3) Serverless compute (AWS Lambda)
-
-* **Decision:** Lambda instead of containers.
-* **Why:** Scale-to-zero cost model + strong per-request isolation.
-
-### 4) Native wheel vendoring vs. Docker builds
-
-* **Decision:** Package native wheels without requiring Docker for cloud deployment.
-* **Why:** Reduce reviewer friction; deploy from a fresh laptop with minimal dependencies.
-
-### 5) Store adapter interface vs. a fixed database
-
-* **Decision:** Retrieval store is an interface; the demo uses an in-memory implementation.
-* **Why:** Test the security boundary without external infrastructure; preserve a production-shaped interface.
+* Azure mapping (reference): `docs/azure_mapping.md`
 
 ---
 
@@ -444,7 +432,7 @@ I prioritized **security invariants** and **reviewer experience** over feature b
 Designed to be cheap-by-default:
 
 * serverless (scale-to-zero)
-* short log retention (7 days)
+* short log retention (example: 7 days)
 * alarms for 5xx / throttles / high denials
 * explicit kill switch: `make destroy-dev`
 
@@ -457,19 +445,3 @@ Designed to be cheap-by-default:
 | [0001](docs/decisions/0001-auth-before-retrieval.md) | **Auth-Before-Retrieval**    | Authorize *before* any storage read    |
 | [0002](docs/decisions/0002-dual-mode-identity.md)    | **Dual-Mode Identity**       | Local headers for demos; JWT for cloud |
 | [0003](docs/decisions/0003-native-build-strategy.md) | **Native Build (No Docker)** | Zero-friction reviewer experience      |
-
----
-
-## 📊 Production Readiness (illustrative SLOs)
-
-If this were a production service, I would track:
-
-| SLO                    | Target        | Rationale                                     |
-| ---------------------- | ------------- | --------------------------------------------- |
-| **Availability**       | 99.9%         | Gateway is on the critical path for retrieval |
-| **P99 Latency**        | < 200ms       | Auth + policy must not become a bottleneck    |
-| **Deny Rate Alarm**    | alert if > 5% | Spikes may indicate misconfig or attack       |
-| **Error Rate**         | < 0.1% 5xx    | Fail-closed means availability matters        |
-| **Audit Completeness** | 100%          | Every deny must be traceable via `request_id` |
-
-> These SLOs are documented to demonstrate production thinking. The demo implements CloudWatch alarms and structured logs as a foundation.

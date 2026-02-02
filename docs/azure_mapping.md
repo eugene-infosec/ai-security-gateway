@@ -49,3 +49,16 @@ The gateway supports this posture by:
 - Keeping enforcement inside a **trusted compute boundary**
 - Ensuring sensitive content isn’t emitted via logs/snippets
 - Emitting **correlatable receipts** for audit review
+
+---
+
+## Additional Azure Resources
+
+This repo includes Azure-specific reference materials:
+
+| Resource | Location | Purpose |
+|----------|----------|---------|
+| **Bicep Templates** | `infra/bicep/` | Function App + APIM + Entra ID reference architecture |
+| **Sentinel Queries** | `docs/azure_sentinel_queries.md` | KQL examples for detection and investigation |
+
+> **Note:** The Bicep templates are reference implementations showing Azure equivalence, not deployed in this demo.
